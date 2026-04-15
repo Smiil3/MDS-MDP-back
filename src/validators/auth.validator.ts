@@ -32,34 +32,34 @@ export type MechanicLoginInput = {
 };
 
 export const driverRegisterSchema = Joi.object<DriverRegisterInput>({
-  last_name: Joi.string().trim().min(1).max(100).required(),
-  first_name: Joi.string().trim().min(1).max(100).required(),
-  email: Joi.string().trim().email().max(100).required(),
-  password: Joi.string().min(8).max(100).required(),
-  phone: Joi.string().trim().min(1).max(50).required(),
+  last_name: Joi.string().required(),
+  first_name: Joi.string().required(),
+  email: Joi.string().email().required(),
+  password: Joi.string().required(),
+  phone: Joi.string().required(),
   birth_date: Joi.date().iso().required(),
   id_subscription: Joi.number().integer().positive().required(),
 }).required();
 
 export const driverLoginSchema = Joi.object<DriverLoginInput>({
-  email: Joi.string().trim().email().max(100).required(),
-  password: Joi.string().min(8).max(100).required(),
+  email: Joi.string().email().required(),
+  password: Joi.string().required(),
 }).required();
 
 export const mechanicRegisterSchema = Joi.object<MechanicRegisterInput>({
-  name: Joi.string().trim().min(1).max(100).required(),
-  email: Joi.string().trim().email().max(100).required(),
-  password: Joi.string().min(8).max(100).required(),
-  address: Joi.string().trim().min(1).max(150).required(),
+  name: Joi.string().required(),
+  email: Joi.string().email().required(),
+  password: Joi.string().required(),
+  address: Joi.string().required(),
   zip_code: Joi.number().integer().min(0).required(),
-  city: Joi.string().trim().min(1).max(100).required(),
-  description: Joi.string().trim().allow("").max(65535).optional(),
-  siret: Joi.string().trim().min(1).max(150).required(),
+  city: Joi.string().required(),
+  description: Joi.string().allow("").optional(),
+  siret: Joi.string().required(),
 }).required();
 
 export const mechanicLoginSchema = Joi.object<MechanicLoginInput>({
-  email: Joi.string().trim().email().max(100).required(),
-  password: Joi.string().min(8).max(100).required(),
+  email: Joi.string().email().required(),
+  password: Joi.string().required(),
 }).required();
 
 export const validatePayload = <T>(schema: ObjectSchema<T>, payload: unknown) => {

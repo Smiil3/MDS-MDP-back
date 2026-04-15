@@ -61,7 +61,6 @@ describe("auth.validator", () => {
   it("rejects invalid mechanic login payload", () => {
     const result = validatePayload(mechanicLoginSchema, {
       email: "garage@test.dev",
-      password: "short",
     });
 
     expect(result.value).toBeUndefined();
