@@ -52,11 +52,45 @@ describe("auth.validator", () => {
       zip_code: 75001,
       city: "Paris",
       description: "Garage de test",
-      siret: "12345678900011",
+      image_url: "https://cdn.test/garage.jpg",
+      opening_hours: {
+        mon: [{ open: "08:00", close: "18:00" }],
+        tue: [{ open: "08:00", close: "18:00" }],
+        wed: [{ open: "08:00", close: "18:00" }],
+        thu: [{ open: "08:00", close: "18:00" }],
+        fri: [{ open: "08:00", close: "18:00" }],
+        sat: [],
+        sun: [],
+      },
+      siret: "12345678901234",
     });
 
     expect(result.errors).toBeUndefined();
     expect(result.value).toBeDefined();
+  });
+
+  it("rejects mechanic register payload with invalid siret", () => {
+    const result = validatePayload(mechanicRegisterSchema, {
+      name: "Garage Nord",
+      email: "garage@test.dev",
+      password: "password123",
+      address: "12 rue test",
+      zip_code: 75001,
+      city: "Paris",
+      opening_hours: {
+        mon: [{ open: "08:00", close: "18:00" }],
+        tue: [{ open: "08:00", close: "18:00" }],
+        wed: [{ open: "08:00", close: "18:00" }],
+        thu: [{ open: "08:00", close: "18:00" }],
+        fri: [{ open: "08:00", close: "18:00" }],
+        sat: [],
+        sun: [],
+      },
+      siret: "ABC123",
+    });
+
+    expect(result.value).toBeUndefined();
+    expect(result.errors).toBeDefined();
   });
 
   it("rejects invalid mechanic login payload", () => {

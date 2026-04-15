@@ -24,6 +24,16 @@ export type MechanicRegisterInput = {
   zip_code: number;
   city: string;
   description?: string;
+  image_url?: string;
+  opening_hours: {
+    mon: { open: string; close: string }[];
+    tue: { open: string; close: string }[];
+    wed: { open: string; close: string }[];
+    thu: { open: string; close: string }[];
+    fri: { open: string; close: string }[];
+    sat: { open: string; close: string }[];
+    sun: { open: string; close: string }[];
+  };
   siret: string;
 };
 
@@ -35,6 +45,32 @@ export type MechanicLoginInput = {
 export type RefreshTokenInput = {
   refreshToken: string;
 };
+
+const openingHourSlotSchema = Joi.object({
+  open: Joi.string()
+    .pattern(/^([01]\d|2[0-3]):(00|30)$/)
+    .required(),
+  close: Joi.string()
+    .pattern(/^([01]\d|2[0-3]):(00|30)$/)
+    .required(),
+})
+  .custom((value: { open: string; close: string }, helpers) => {
+    if (value.open >= value.close) {
+      return helpers.error("any.invalid");
+    }
+
+    return value;
+  }, "opening slot range validation");
+
+const openingHoursSchema = Joi.object({
+  mon: Joi.array().items(openingHourSlotSchema).required(),
+  tue: Joi.array().items(openingHourSlotSchema).required(),
+  wed: Joi.array().items(openingHourSlotSchema).required(),
+  thu: Joi.array().items(openingHourSlotSchema).required(),
+  fri: Joi.array().items(openingHourSlotSchema).required(),
+  sat: Joi.array().items(openingHourSlotSchema).required(),
+  sun: Joi.array().items(openingHourSlotSchema).required(),
+}).required();
 
 export const driverRegisterSchema = Joi.object<DriverRegisterInput>({
   last_name: Joi.string().required(),
@@ -59,7 +95,9 @@ export const mechanicRegisterSchema = Joi.object<MechanicRegisterInput>({
   zip_code: Joi.number().integer().min(0).required(),
   city: Joi.string().required(),
   description: Joi.string().allow("").optional(),
-  siret: Joi.string().required(),
+  image_url: Joi.string().uri().optional(),
+  opening_hours: openingHoursSchema,
+  siret: Joi.string().pattern(/^\d{14}$/).required(),
 }).required();
 
 export const mechanicLoginSchema = Joi.object<MechanicLoginInput>({

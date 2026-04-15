@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { Prisma } from "@prisma/client";
 import {
   getJwtExpiresIn,
   getJwtRefreshExpiresIn,
@@ -7,6 +8,7 @@ import {
   getJwtSecret,
 } from "../config/auth.config";
 import { prisma } from "../prisma/client";
+import { geocodingService } from "./geocoding.service";
 import {
   isRefreshTokenPayload,
   type AuthRole,
@@ -135,6 +137,11 @@ export const authService = {
     }
 
     const passwordHash = await hashPassword(input.password);
+    const { latitude, longitude } = await geocodingService.geocodeAddress({
+      address: input.address,
+      zipCode: String(input.zip_code),
+      city: input.city,
+    });
     const mechanic = await prisma.mechanic.create({
       data: {
         name: input.name,
@@ -144,6 +151,10 @@ export const authService = {
         zip_code: input.zip_code,
         city: input.city,
         description: input.description,
+        image_url: input.image_url,
+        opening_hours: input.opening_hours as Prisma.InputJsonValue,
+        latitude,
+        longitude,
         siret: input.siret,
       },
     });
