@@ -8,10 +8,173 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model booking {
+  id_booking        Int            @id @default(autoincrement())
+  appointment_date  DateTime       @db.DateTime(0)
+  total_amount      Decimal        @db.Decimal(15, 2)
+  created_at        DateTime       @db.DateTime(0)
+  id_mechanic       Int?
+  id_booking_status Int
+  id_driver         Int?
+  mechanic          mechanic?      @relation(fields: [id_mechanic], references: [id_mechanic], onDelete: NoAction, onUpdate: NoAction, map: "booking_ibfk_1")
+  booking_status    booking_status @relation(fields: [id_booking_status], references: [id_booking_status], onDelete: NoAction, onUpdate: NoAction, map: "booking_ibfk_2")
+  driver            driver?        @relation(fields: [id_driver], references: [id_driver], onDelete: NoAction, onUpdate: NoAction, map: "booking_ibfk_3")
+
+  @@index([id_booking_status], map: "id_booking_status")
+  @@index([id_driver], map: "id_driver")
+  @@index([id_mechanic], map: "id_mechanic")
+}
+
+model booking_status {
+  id_booking_status Int       @id @default(autoincrement())
+  label             String    @db.VarChar(50)
+  booking           booking[]
+}
+
+model driver {
+  id_driver       Int          @id @default(autoincrement())
+  last_name       String       @db.VarChar(100)
+  first_name      String       @db.VarChar(100)
+  email           String       @unique(map: "email") @db.VarChar(100)
+  password        String       @db.VarChar(100)
+  phone           String       @db.VarChar(50)
+  birth_date      DateTime     @db.Date
+  id_subscription Int
+  booking         booking[]
+  subscription    subscription @relation(fields: [id_subscription], references: [id_subscription], onDelete: NoAction, onUpdate: NoAction, map: "driver_ibfk_1")
+  review          review[]
+  vehicle         vehicle[]
+
+  @@index([id_subscription], map: "id_subscription")
+}
+
+model garage_service {
+  id_garage_service Int       @id @default(autoincrement())
+  label             String    @db.VarChar(50)
+  price             Decimal   @db.Decimal(15, 2)
+  description       String    @db.Text
+  id_mechanic       Int?
+  mechanic          mechanic? @relation(fields: [id_mechanic], references: [id_mechanic], onDelete: NoAction, onUpdate: NoAction, map: "garage_service_ibfk_1")
+
+  @@index([id_mechanic], map: "id_mechanic")
+}
+
+model is_notified {
+  id_maintenance_reminder Int
+  id_notification         Int
+  maintenance_reminder    maintenance_reminder @relation(fields: [id_maintenance_reminder], references: [id_maintenance_reminder], onDelete: NoAction, onUpdate: NoAction, map: "is_notified_ibfk_1")
+  notification            notification         @relation(fields: [id_notification], references: [id_notification], onDelete: NoAction, onUpdate: NoAction, map: "is_notified_ibfk_2")
+
+  @@id([id_maintenance_reminder, id_notification])
+  @@index([id_notification], map: "id_notification")
+}
+
+model maintenance_history {
+  id_maintenance_history  Int                  @id @default(autoincrement())
+  date                    DateTime             @db.Date
+  mileage                 Int?
+  amount                  Decimal?             @db.Decimal(15, 2)
+  invoice                 String?              @db.VarChar(100)
+  id_maintenance_reminder Int                  @unique(map: "id_maintenance_reminder")
+  id_maintenance_type     Int
+  id_maintenance_logbook  Int?
+  maintenance_reminder    maintenance_reminder @relation(fields: [id_maintenance_reminder], references: [id_maintenance_reminder], onDelete: NoAction, onUpdate: NoAction, map: "maintenance_history_ibfk_1")
+  maintenance_type        maintenance_type     @relation(fields: [id_maintenance_type], references: [id_maintenance_type], onDelete: NoAction, onUpdate: NoAction, map: "maintenance_history_ibfk_2")
+  maintenance_logbook     maintenance_logbook? @relation(fields: [id_maintenance_logbook], references: [id_maintenance_logbook], onDelete: NoAction, onUpdate: NoAction, map: "maintenance_history_ibfk_3")
+
+  @@index([id_maintenance_logbook], map: "id_maintenance_logbook")
+  @@index([id_maintenance_type], map: "id_maintenance_type")
+}
+
+model maintenance_logbook {
+  id_maintenance_logbook Int                   @id @default(autoincrement())
+  year                   Int?
+  mileage                BigInt?
+  tracking_number        BigInt?
+  first_registration     DateTime?             @db.Date
+  maintenance_history    maintenance_history[]
+  vehicle                vehicle?
+}
+
+model maintenance_reminder {
+  id_maintenance_reminder Int                  @id @default(autoincrement())
+  type                    String               @db.VarChar(50)
+  next_maintenance        DateTime             @db.Date
+  is_notified             is_notified[]
+  maintenance_history     maintenance_history?
+}
+
+model maintenance_type {
+  id_maintenance_type Int                   @id @default(autoincrement())
+  label               String                @db.VarChar(50)
+  maintenance_history maintenance_history[]
+}
+
+model mechanic {
+  id_mechanic    Int              @id @default(autoincrement())
+  name           String           @db.VarChar(100)
+  email          String           @unique(map: "email") @db.VarChar(100)
+  password       String           @db.VarChar(100)
+  address        String           @db.VarChar(150)
+  zip_code       Int
+  city           String           @db.VarChar(100)
+  description    String?          @db.Text
+  siret          String           @db.VarChar(150)
+  booking        booking[]
+  garage_service garage_service[]
+  review         review[]
+}
+
+model notification {
+  id_notification Int           @id @default(autoincrement())
+  title           String        @db.VarChar(150)
+  description     String        @db.Text
+  created_at      DateTime      @db.Date
+  is_notified     is_notified[]
+}
+
+model review {
+  id_review   Int       @id @default(autoincrement())
+  rating      Int
+  description String?   @db.Text
+  date        DateTime  @db.Date
+  id_mechanic Int?
+  id_driver   Int?
+  mechanic    mechanic? @relation(fields: [id_mechanic], references: [id_mechanic], onDelete: NoAction, onUpdate: NoAction, map: "review_ibfk_1")
+  driver      driver?   @relation(fields: [id_driver], references: [id_driver], onDelete: NoAction, onUpdate: NoAction, map: "review_ibfk_2")
+
+  @@index([id_driver], map: "id_driver")
+  @@index([id_mechanic], map: "id_mechanic")
+}
+
+model subscription {
+  id_subscription      Int               @id @default(autoincrement())
+  start_date           DateTime          @db.Date
+  end_date             DateTime          @db.Date
+  id_subscription_type Int
+  driver               driver[]
+  subscription_type    subscription_type @relation(fields: [id_subscription_type], references: [id_subscription_type], onDelete: NoAction, onUpdate: NoAction, map: "subscription_ibfk_1")
+
+  @@index([id_subscription_type], map: "id_subscription_type")
+}
+
+model subscription_type {
+  id_subscription_type Int            @id @default(autoincrement())
+  label                String         @db.VarChar(50)
+  price                Decimal        @db.Decimal(15, 2)
+  subscription         subscription[]
+}
+
+model vehicle {
+  id_vehicle             Int                 @id @default(autoincrement())
+  brand                  String              @db.VarChar(50)
+  model                  String              @db.VarChar(50)
+  license_plate          String?             @db.VarChar(50)
+  fuel_type              String?             @db.VarChar(50)
+  id_maintenance_logbook Int                 @unique(map: "id_maintenance_logbook")
+  id_driver              Int?
+  maintenance_logbook    maintenance_logbook @relation(fields: [id_maintenance_logbook], references: [id_maintenance_logbook], onDelete: NoAction, onUpdate: NoAction, map: "vehicle_ibfk_1")
+  driver                 driver?             @relation(fields: [id_driver], references: [id_driver], onDelete: NoAction, onUpdate: NoAction, map: "vehicle_ibfk_2")
+
+  @@index([id_driver], map: "id_driver")
 }
