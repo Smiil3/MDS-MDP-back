@@ -10,6 +10,7 @@ export type CreateBookingInput = {
   id_mechanic: number;
   id_booking_status: number;
   id_driver: number;
+  id_vehicle?: number;
 };
 
 export type UpdateBookingInput = Partial<CreateBookingInput>;
@@ -24,6 +25,7 @@ export const createBookingSchema = Joi.object<CreateBookingInput>({
   id_mechanic: Joi.number().integer().required(),
   id_booking_status: Joi.number().integer().required(),
   id_driver: Joi.number().integer().required(),
+  id_vehicle: Joi.number().integer().optional(),
 }).required();
 
 export const updateBookingSchema = Joi.object<UpdateBookingInput>({
@@ -32,4 +34,5 @@ export const updateBookingSchema = Joi.object<UpdateBookingInput>({
   id_mechanic: Joi.number().integer().optional(),
   id_booking_status: Joi.number().integer().optional(),
   id_driver: Joi.number().integer().optional(),
+  id_vehicle: Joi.number().integer().optional(),
 }).required();
