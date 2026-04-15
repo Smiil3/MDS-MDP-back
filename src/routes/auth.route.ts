@@ -19,3 +19,5 @@ authRouter.get(
   authMiddleware(["mechanic"]),
   authController.getMechanicProfile,
 );
+
+authRouter.post("/refresh", authController.refresh);

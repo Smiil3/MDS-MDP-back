@@ -9,6 +9,7 @@ jest.mock("../../src/services/auth.service", () => ({
     loginDriver: jest.fn(),
     registerMechanic: jest.fn(),
     loginMechanic: jest.fn(),
+    refreshToken: jest.fn(),
   },
 }));
 
@@ -33,7 +34,8 @@ describe("auth routes (component)", () => {
 
   it("POST /api/auth/drivers/register returns 201 on success", async () => {
     authServiceMock.registerDriver.mockResolvedValue({
-      token: "driver-token",
+      accessToken: "driver-access-token",
+      refreshToken: "driver-refresh-token",
       user: { id: 1, role: "driver", email: "john@test.dev" },
     });
 
@@ -49,7 +51,8 @@ describe("auth routes (component)", () => {
 
     expect(response.status).toBe(201);
     expect(response.body).toEqual({
-      token: "driver-token",
+      accessToken: "driver-access-token",
+      refreshToken: "driver-refresh-token",
       user: { id: 1, role: "driver", email: "john@test.dev" },
     });
   });
@@ -65,13 +68,43 @@ describe("auth routes (component)", () => {
     expect(response.status).toBe(401);
   });
 
+  it("POST /api/auth/refresh returns 401 for invalid refresh token", async () => {
+    authServiceMock.refreshToken.mockResolvedValue(null);
+
+    const response = await request(app).post("/api/auth/refresh").send({
+      refreshToken: "invalid-token",
+    });
+
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({ message: "Invalid or expired refresh token." });
+  });
+
+  it("POST /api/auth/refresh returns 200 for valid refresh token", async () => {
+    authServiceMock.refreshToken.mockResolvedValue({
+      accessToken: "new-access-token",
+      refreshToken: "new-refresh-token",
+      user: { id: 3, role: "mechanic", email: "garage@test.dev" },
+    });
+
+    const response = await request(app).post("/api/auth/refresh").send({
+      refreshToken: "valid-token",
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      accessToken: "new-access-token",
+      refreshToken: "new-refresh-token",
+      user: { id: 3, role: "mechanic", email: "garage@test.dev" },
+    });
+  });
+
   it("GET /api/auth/drivers/me returns 401 without token", async () => {
     const response = await request(app).get("/api/auth/drivers/me");
     expect(response.status).toBe(401);
   });
 
   it("GET /api/auth/drivers/me returns 403 for wrong role", async () => {
-    const token = jwt.sign({ sub: "8", role: "mechanic" }, secret, {
+    const token = jwt.sign({ sub: "8", role: "mechanic", tokenType: "access" }, secret, {
       expiresIn: "1h",
     });
 
@@ -83,7 +116,7 @@ describe("auth routes (component)", () => {
   });
 
   it("GET /api/auth/drivers/me returns 200 for driver token", async () => {
-    const token = jwt.sign({ sub: "9", role: "driver" }, secret, {
+    const token = jwt.sign({ sub: "9", role: "driver", tokenType: "access" }, secret, {
       expiresIn: "1h",
     });
 
@@ -96,7 +129,7 @@ describe("auth routes (component)", () => {
   });
 
   it("GET /api/auth/mechanics/me returns 200 for mechanic token", async () => {
-    const token = jwt.sign({ sub: "11", role: "mechanic" }, secret, {
+    const token = jwt.sign({ sub: "11", role: "mechanic", tokenType: "access" }, secret, {
       expiresIn: "1h",
     });
 

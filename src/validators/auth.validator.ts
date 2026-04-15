@@ -31,6 +31,10 @@ export type MechanicLoginInput = {
   password: string;
 };
 
+export type RefreshTokenInput = {
+  refreshToken: string;
+};
+
 export const driverRegisterSchema = Joi.object<DriverRegisterInput>({
   last_name: Joi.string().required(),
   first_name: Joi.string().required(),
@@ -60,6 +64,10 @@ export const mechanicRegisterSchema = Joi.object<MechanicRegisterInput>({
 export const mechanicLoginSchema = Joi.object<MechanicLoginInput>({
   email: Joi.string().email().required(),
   password: Joi.string().required(),
+}).required();
+
+export const refreshTokenSchema = Joi.object<RefreshTokenInput>({
+  refreshToken: Joi.string().required(),
 }).required();
 
 export const validatePayload = <T>(schema: ObjectSchema<T>, payload: unknown) => {

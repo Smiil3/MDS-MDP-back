@@ -3,6 +3,7 @@ import {
   driverRegisterSchema,
   mechanicLoginSchema,
   mechanicRegisterSchema,
+  refreshTokenSchema,
   validatePayload,
 } from "../../src/validators/auth.validator";
 
@@ -62,6 +63,23 @@ describe("auth.validator", () => {
     const result = validatePayload(mechanicLoginSchema, {
       email: "garage@test.dev",
     });
+
+    expect(result.value).toBeUndefined();
+    expect(result.errors).toBeDefined();
+    expect(result.errors).toHaveLength(1);
+  });
+
+  it("accepts valid refresh token payload", () => {
+    const result = validatePayload(refreshTokenSchema, {
+      refreshToken: "some-token",
+    });
+
+    expect(result.errors).toBeUndefined();
+    expect(result.value).toEqual({ refreshToken: "some-token" });
+  });
+
+  it("rejects invalid refresh token payload", () => {
+    const result = validatePayload(refreshTokenSchema, {});
 
     expect(result.value).toBeUndefined();
     expect(result.errors).toBeDefined();

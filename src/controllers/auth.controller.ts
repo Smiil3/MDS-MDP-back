@@ -5,6 +5,7 @@ import {
   driverRegisterSchema,
   mechanicLoginSchema,
   mechanicRegisterSchema,
+  refreshTokenSchema,
   validatePayload,
 } from "../validators/auth.validator";
 
@@ -75,6 +76,24 @@ export const authController = {
 
     if (!result) {
       res.status(401).json({ message: "Invalid credentials." });
+      return;
+    }
+
+    res.status(200).json(result);
+  },
+
+  async refresh(req: Request, res: Response) {
+    const { errors, value } = validatePayload(refreshTokenSchema, req.body);
+
+    if (errors || !value) {
+      res.status(400).json({ message: "Invalid payload.", errors });
+      return;
+    }
+
+    const result = await authService.refreshToken(value.refreshToken);
+
+    if (!result) {
+      res.status(401).json({ message: "Invalid or expired refresh token." });
       return;
     }
 

@@ -15,3 +15,13 @@ export const getJwtExpiresIn = (): SignOptions["expiresIn"] => {
 
   return expiresIn ? (expiresIn as SignOptions["expiresIn"]) : "1h";
 };
+
+export const getJwtRefreshSecret = () => {
+  return process.env.JWT_REFRESH_SECRET || getJwtSecret();
+};
+
+export const getJwtRefreshExpiresIn = (): SignOptions["expiresIn"] => {
+  const expiresIn = process.env.JWT_REFRESH_EXPIRES_IN;
+
+  return expiresIn ? (expiresIn as SignOptions["expiresIn"]) : "7d";
+};
