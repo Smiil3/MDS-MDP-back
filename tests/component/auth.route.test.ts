@@ -1,9 +1,9 @@
 import jwt from "jsonwebtoken";
 import request from "supertest";
-import { app } from "../app";
-import { authService } from "../services/auth.service";
+import { app } from "../../src/app";
+import { authService } from "../../src/services/auth.service";
 
-jest.mock("../services/auth.service", () => ({
+jest.mock("../../src/services/auth.service", () => ({
   authService: {
     registerDriver: jest.fn(),
     loginDriver: jest.fn(),

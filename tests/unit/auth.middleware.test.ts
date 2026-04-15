@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 import { type NextFunction, type Request, type Response } from "express";
-import { authMiddleware } from "./auth.middleware";
+import { authMiddleware } from "../../src/middlewares/auth.middleware";
 
 type ResponseMock = Response & {
   status: jest.Mock;

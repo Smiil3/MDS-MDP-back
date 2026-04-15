@@ -4,7 +4,7 @@ import {
   mechanicLoginSchema,
   mechanicRegisterSchema,
   validatePayload,
-} from "./auth.validator";
+} from "../../src/validators/auth.validator";
 
 describe("auth.validator", () => {
   it("accepts a valid driver register payload and strips unknown fields", () => {

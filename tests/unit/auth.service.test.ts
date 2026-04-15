@@ -1,9 +1,9 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { authService } from "./auth.service";
-import { prisma } from "../prisma/client";
+import { authService } from "../../src/services/auth.service";
+import { prisma } from "../../src/prisma/client";
 
-jest.mock("../prisma/client", () => ({
+jest.mock("../../src/prisma/client", () => ({
   prisma: {
     driver: {
       findUnique: jest.fn(),
@@ -25,7 +25,7 @@ jest.mock("jsonwebtoken", () => ({
   sign: jest.fn(),
 }));
 
-jest.mock("../config/auth.config", () => ({
+jest.mock("../../src/config/auth.config", () => ({
   getJwtSecret: jest.fn(() => "test-secret"),
   getJwtExpiresIn: jest.fn(() => "1h"),
 }));
