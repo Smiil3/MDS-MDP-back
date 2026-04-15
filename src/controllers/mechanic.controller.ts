@@ -1,15 +1,16 @@
 import { type Request, type Response } from "express";
 import { mechanicService } from "../services/mechanic.service";
+import {
+  createMechanicSchema,
+  mechanicIdParamSchema,
+  updateMechanicSchema,
+} from "../validators/mechanic.validator";
+import { validatePayload } from "../validators/validator.utils";
 
 type IdParam = { id: string };
 
 const isNonEmptyString = (value: unknown): value is string =>
   typeof value === "string" && value.trim().length > 0;
-
-const parseId = (param: string): number | null => {
-  const id = parseInt(param, 10);
-  return isNaN(id) ? null : id;
-};
 
 export const mechanicController = {
   async getAll(_req: Request, res: Response) {
@@ -18,13 +19,14 @@ export const mechanicController = {
   },
 
   async getById(req: Request<IdParam>, res: Response) {
-    const id = parseId(req.params.id);
-    if (id === null) {
+    const { errors, value } = validatePayload(mechanicIdParamSchema, req.params);
+
+    if (errors || !value) {
       res.status(400).json({ message: "Invalid mechanic id." });
       return;
     }
 
-    const mechanic = await mechanicService.findById(id);
+    const mechanic = await mechanicService.findById(value.id);
     if (!mechanic) {
       res.status(404).json({ message: "Mechanic not found." });
       return;
@@ -34,157 +36,130 @@ export const mechanicController = {
   },
 
   async create(req: Request, res: Response) {
-    const { name, email, password, address, zip_code, city, siret, description } =
-      req.body as {
-        name?: unknown;
-        email?: unknown;
-        password?: unknown;
-        address?: unknown;
-        zip_code?: unknown;
-        city?: unknown;
-        siret?: unknown;
-        description?: unknown;
-      };
+    const { errors, value } = validatePayload(createMechanicSchema, req.body);
 
-    if (
-      !isNonEmptyString(name) ||
-      !isNonEmptyString(email) ||
-      !isNonEmptyString(password) ||
-      !isNonEmptyString(address) ||
-      typeof zip_code !== "number" ||
-      !isNonEmptyString(city) ||
-      !isNonEmptyString(siret)
-    ) {
-      res.status(400).json({
-        message:
-          "Fields 'name', 'email', 'password', 'address', numeric 'zip_code', 'city' and 'siret' are required.",
-      });
+    if (errors || !value) {
+      res.status(400).json({ message: "Invalid payload.", errors });
       return;
     }
 
-    const mechanic = await mechanicService.create({
-      name: name.trim(),
-      email: email.trim(),
-      password: password.trim(),
-      address: address.trim(),
-      zip_code,
-      city: city.trim(),
-      siret: siret.trim(),
-      description: isNonEmptyString(description) ? description.trim() : undefined,
-    });
+    const mechanic = await mechanicService.create(value);
 
     res.status(201).json(mechanic);
   },
 
   async update(req: Request<IdParam>, res: Response) {
-    const id = parseId(req.params.id);
-    if (id === null) {
+    const { errors: paramErrors, value: params } = validatePayload(
+      mechanicIdParamSchema,
+      req.params,
+    );
+
+    if (paramErrors || !params) {
       res.status(400).json({ message: "Invalid mechanic id." });
       return;
     }
 
-    const existing = await mechanicService.findById(id);
+    const existing = await mechanicService.findById(params.id);
     if (!existing) {
       res.status(404).json({ message: "Mechanic not found." });
       return;
     }
 
-    const { name, email, password, address, zip_code, city, siret, description } =
-      req.body as {
-        name?: unknown;
-        email?: unknown;
-        password?: unknown;
-        address?: unknown;
-        zip_code?: unknown;
-        city?: unknown;
-        siret?: unknown;
-        description?: unknown;
-      };
+    const { errors, value } = validatePayload(updateMechanicSchema, req.body);
+
+    if (errors || !value) {
+      res.status(400).json({ message: "Invalid payload.", errors });
+      return;
+    }
 
     const data: Record<string, unknown> = {};
-    if (isNonEmptyString(name)) data.name = name.trim();
-    if (isNonEmptyString(email)) data.email = email.trim();
-    if (isNonEmptyString(password)) data.password = password.trim();
-    if (isNonEmptyString(address)) data.address = address.trim();
-    if (typeof zip_code === "number") data.zip_code = zip_code;
-    if (isNonEmptyString(city)) data.city = city.trim();
-    if (isNonEmptyString(siret)) data.siret = siret.trim();
-    if (isNonEmptyString(description)) data.description = description.trim();
+    if (isNonEmptyString(value.name)) data.name = value.name.trim();
+    if (isNonEmptyString(value.email)) data.email = value.email.trim();
+    if (isNonEmptyString(value.password)) data.password = value.password.trim();
+    if (isNonEmptyString(value.address)) data.address = value.address.trim();
+    if (typeof value.zip_code === "number") data.zip_code = value.zip_code;
+    if (isNonEmptyString(value.city)) data.city = value.city.trim();
+    if (isNonEmptyString(value.siret)) data.siret = value.siret.trim();
+    if (isNonEmptyString(value.description)) data.description = value.description.trim();
 
     if (Object.keys(data).length === 0) {
       res.status(400).json({ message: "No valid fields provided for update." });
       return;
     }
 
-    const mechanic = await mechanicService.update(id, data);
+    const mechanic = await mechanicService.update(params.id, data);
     res.status(200).json(mechanic);
   },
 
   async remove(req: Request<IdParam>, res: Response) {
-    const id = parseId(req.params.id);
-    if (id === null) {
+    const { errors, value } = validatePayload(mechanicIdParamSchema, req.params);
+
+    if (errors || !value) {
       res.status(400).json({ message: "Invalid mechanic id." });
       return;
     }
 
-    const existing = await mechanicService.findById(id);
+    const existing = await mechanicService.findById(value.id);
     if (!existing) {
       res.status(404).json({ message: "Mechanic not found." });
       return;
     }
 
-    await mechanicService.delete(id);
+    await mechanicService.delete(value.id);
     res.status(204).send();
   },
 
   async getBookings(req: Request<IdParam>, res: Response) {
-    const id = parseId(req.params.id);
-    if (id === null) {
+    const { errors, value } = validatePayload(mechanicIdParamSchema, req.params);
+
+    if (errors || !value) {
       res.status(400).json({ message: "Invalid mechanic id." });
       return;
     }
 
-    const existing = await mechanicService.findById(id);
+    const existing = await mechanicService.findById(value.id);
     if (!existing) {
       res.status(404).json({ message: "Mechanic not found." });
       return;
     }
 
-    const bookings = await mechanicService.findBookings(id);
+    const bookings = await mechanicService.findBookings(value.id);
     res.status(200).json(bookings);
   },
 
   async getServices(req: Request<IdParam>, res: Response) {
-    const id = parseId(req.params.id);
-    if (id === null) {
+    const { errors, value } = validatePayload(mechanicIdParamSchema, req.params);
+
+    if (errors || !value) {
       res.status(400).json({ message: "Invalid mechanic id." });
       return;
     }
 
-    const existing = await mechanicService.findById(id);
+    const existing = await mechanicService.findById(value.id);
     if (!existing) {
       res.status(404).json({ message: "Mechanic not found." });
       return;
     }
 
-    const services = await mechanicService.findServices(id);
+    const services = await mechanicService.findServices(value.id);
     res.status(200).json(services);
   },
 
   async getReviews(req: Request<IdParam>, res: Response) {
-    const id = parseId(req.params.id);
-    if (id === null) {
+    const { errors, value } = validatePayload(mechanicIdParamSchema, req.params);
+
+    if (errors || !value) {
       res.status(400).json({ message: "Invalid mechanic id." });
       return;
     }
 
-    const existing = await mechanicService.findById(id);
+    const existing = await mechanicService.findById(value.id);
     if (!existing) {
       res.status(404).json({ message: "Mechanic not found." });
       return;
     }
 
-    const reviews = await mechanicService.findReviews(id);
+    const reviews = await mechanicService.findReviews(value.id);
     res.status(200).json(reviews);
   },
 };
