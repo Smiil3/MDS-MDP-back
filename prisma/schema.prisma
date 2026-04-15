@@ -119,6 +119,10 @@ model mechanic {
   zip_code       Int
   city           String           @db.VarChar(100)
   description    String?          @db.Text
+  image_url      String?          @db.VarChar(255)
+  opening_hours  Json?
+  latitude       Float?           @db.Double
+  longitude      Float?           @db.Double
   siret          String           @db.VarChar(150)
   booking        booking[]
   garage_service garage_service[]
