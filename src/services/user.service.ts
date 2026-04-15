@@ -1,19 +1,34 @@
 import { prisma } from "../prisma/client";
 
 type CreateUserInput = {
+  last_name: string;
+  first_name: string;
   email: string;
-  name: string;
+  password: string;
+  phone: string;
+  birth_date: string;
+  id_subscription: number;
 };
 
 export const userService = {
   findAll() {
-    return prisma.user.findMany({
+    return prisma.driver.findMany({
       orderBy: {
-        id: "desc",
+        id_driver: "desc",
       },
     });
   },
   create(data: CreateUserInput) {
-    return prisma.user.create({ data });
+    return prisma.driver.create({
+      data: {
+        last_name: data.last_name,
+        first_name: data.first_name,
+        email: data.email,
+        password: data.password,
+        phone: data.phone,
+        birth_date: new Date(data.birth_date),
+        id_subscription: data.id_subscription,
+      },
+    });
   },
 };
