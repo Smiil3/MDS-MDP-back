@@ -7,6 +7,8 @@ export type GarageCardDto = {
   name: string;
   city: string;
   address: string;
+  latitude: number | null;
+  longitude: number | null;
   imageUrl: string | null;
   openingHours: Prisma.JsonValue | null;
   description: string | null;
@@ -58,6 +60,8 @@ const toGarageCardDto = (
   name: mechanic.name,
   city: mechanic.city,
   address: mechanic.address,
+  latitude: mechanic.latitude,
+  longitude: mechanic.longitude,
   imageUrl: mechanic.image_url,
   openingHours: mechanic.opening_hours,
   description: mechanic.description,
