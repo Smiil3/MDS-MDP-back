@@ -10,18 +10,48 @@ export const userController = {
     res.status(200).json(users);
   },
   async createUser(req: Request, res: Response) {
-    const { email, name } = req.body as { email?: unknown; name?: unknown };
+    const {
+      last_name,
+      first_name,
+      email,
+      password,
+      phone,
+      birth_date,
+      id_subscription,
+    } = req.body as {
+      last_name?: unknown;
+      first_name?: unknown;
+      email?: unknown;
+      password?: unknown;
+      phone?: unknown;
+      birth_date?: unknown;
+      id_subscription?: unknown;
+    };
 
-    if (!isNonEmptyString(email) || !isNonEmptyString(name)) {
+    if (
+      !isNonEmptyString(last_name) ||
+      !isNonEmptyString(first_name) ||
+      !isNonEmptyString(email) ||
+      !isNonEmptyString(password) ||
+      !isNonEmptyString(phone) ||
+      !isNonEmptyString(birth_date) ||
+      typeof id_subscription !== "number"
+    ) {
       res.status(400).json({
-        message: "Both 'email' and 'name' are required.",
+        message:
+          "Fields 'last_name', 'first_name', 'email', 'password', 'phone', 'birth_date' and numeric 'id_subscription' are required.",
       });
       return;
     }
 
     const user = await userService.create({
+      last_name: last_name.trim(),
+      first_name: first_name.trim(),
       email: email.trim(),
-      name: name.trim(),
+      password: password.trim(),
+      phone: phone.trim(),
+      birth_date: birth_date.trim(),
+      id_subscription,
     });
 
     res.status(201).json(user);

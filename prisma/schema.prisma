@@ -113,6 +113,8 @@ model maintenance_type {
 model mechanic {
   id_mechanic    Int              @id @default(autoincrement())
   name           String           @db.VarChar(100)
+  email          String           @unique(map: "email") @db.VarChar(100)
+  password       String           @db.VarChar(100)
   address        String           @db.VarChar(150)
   zip_code       Int
   city           String           @db.VarChar(100)
