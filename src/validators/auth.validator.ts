@@ -1,4 +1,5 @@
-import Joi, { type ObjectSchema } from "joi";
+import Joi from "joi";
+import { validatePayload as validatePayloadBase } from "./validator.utils";
 
 export type DriverRegisterInput = {
   last_name: string;
@@ -70,17 +71,5 @@ export const refreshTokenSchema = Joi.object<RefreshTokenInput>({
   refreshToken: Joi.string().required(),
 }).required();
 
-export const validatePayload = <T>(schema: ObjectSchema<T>, payload: unknown) => {
-  const { error, value } = schema.validate(payload, {
-    abortEarly: false,
-    stripUnknown: true,
-  });
-
-  if (error) {
-    return {
-      errors: error.details.map((detail) => detail.message),
-    };
-  }
-
-  return { value };
-};
+export const validatePayload = <T>(schema: Joi.ObjectSchema<T>, payload: unknown) =>
+  validatePayloadBase(schema, payload, { stripUnknown: true });
