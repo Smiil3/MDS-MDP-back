@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import request from "supertest";
 import { app } from "../../src/app";
+import { GeocodingError } from "../../src/services/geocoding.service";
 import { authService } from "../../src/services/auth.service";
 
 jest.mock("../../src/services/auth.service", () => ({
@@ -54,6 +55,85 @@ describe("auth routes (component)", () => {
       accessToken: "driver-access-token",
       refreshToken: "driver-refresh-token",
       user: { id: 1, role: "driver", email: "john@test.dev" },
+    });
+  });
+
+  it("POST /api/auth/mechanics/register returns 400 on invalid payload", async () => {
+    const response = await request(app).post("/api/auth/mechanics/register").send({
+      name: "Garage Test",
+      email: "garage@test.dev",
+      password: "password123",
+      address: "12 rue test",
+      zip_code: 75001,
+      city: "Paris",
+      siret: "BAD",
+    });
+
+    expect(response.status).toBe(400);
+    expect(authServiceMock.registerMechanic).not.toHaveBeenCalled();
+  });
+
+  it("POST /api/auth/mechanics/register returns 201 on success", async () => {
+    authServiceMock.registerMechanic.mockResolvedValue({
+      accessToken: "mechanic-access-token",
+      refreshToken: "mechanic-refresh-token",
+      user: { id: 3, role: "mechanic", email: "garage@test.dev" },
+    });
+
+    const response = await request(app).post("/api/auth/mechanics/register").send({
+      name: "Garage Test",
+      email: "garage@test.dev",
+      password: "password123",
+      address: "12 rue test",
+      zip_code: 75001,
+      city: "Paris",
+      opening_hours: {
+        mon: [{ open: "08:00", close: "18:00" }],
+        tue: [{ open: "08:00", close: "18:00" }],
+        wed: [{ open: "08:00", close: "18:00" }],
+        thu: [{ open: "08:00", close: "18:00" }],
+        fri: [{ open: "08:00", close: "18:00" }],
+        sat: [],
+        sun: [],
+      },
+      siret: "12345678901234",
+    });
+
+    expect(response.status).toBe(201);
+    expect(response.body).toEqual({
+      accessToken: "mechanic-access-token",
+      refreshToken: "mechanic-refresh-token",
+      user: { id: 3, role: "mechanic", email: "garage@test.dev" },
+    });
+  });
+
+  it("POST /api/auth/mechanics/register returns 400 when geocoding fails", async () => {
+    authServiceMock.registerMechanic.mockRejectedValue(
+      new GeocodingError("No geocoding result found for this address."),
+    );
+
+    const response = await request(app).post("/api/auth/mechanics/register").send({
+      name: "Garage Test",
+      email: "garage@test.dev",
+      password: "password123",
+      address: "12 rue test",
+      zip_code: 75001,
+      city: "Paris",
+      opening_hours: {
+        mon: [{ open: "08:00", close: "18:00" }],
+        tue: [{ open: "08:00", close: "18:00" }],
+        wed: [{ open: "08:00", close: "18:00" }],
+        thu: [{ open: "08:00", close: "18:00" }],
+        fri: [{ open: "08:00", close: "18:00" }],
+        sat: [],
+        sun: [],
+      },
+      siret: "12345678901234",
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({
+      message: "No geocoding result found for this address.",
     });
   });
 

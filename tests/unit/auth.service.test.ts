@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { authService } from "../../src/services/auth.service";
+import { geocodingService } from "../../src/services/geocoding.service";
 import { prisma } from "../../src/prisma/client";
 
 jest.mock("../../src/prisma/client", () => ({
@@ -33,6 +34,12 @@ jest.mock("../../src/config/auth.config", () => ({
   getJwtRefreshExpiresIn: jest.fn(() => "7d"),
 }));
 
+jest.mock("../../src/services/geocoding.service", () => ({
+  geocodingService: {
+    geocodeAddress: jest.fn(),
+  },
+}));
+
 const prismaMock = prisma as unknown as {
   driver: {
     findUnique: jest.Mock;
@@ -46,6 +53,7 @@ const prismaMock = prisma as unknown as {
 
 const bcryptMock = bcrypt as jest.Mocked<typeof bcrypt>;
 const jwtMock = jwt as jest.Mocked<typeof jwt>;
+const geocodingServiceMock = geocodingService as jest.Mocked<typeof geocodingService>;
 
 describe("auth.service", () => {
   beforeEach(() => {
@@ -141,6 +149,89 @@ describe("auth.service", () => {
       refreshToken: "mechanic-refresh-token",
       user: { id: 21, role: "mechanic", email: "garage@test.dev" },
     });
+  });
+
+  it("registerMechanic creates user and stores geocoded coordinates", async () => {
+    prismaMock.mechanic.findUnique.mockResolvedValue(null);
+    bcryptMock.hash.mockResolvedValue("hashed-mechanic-password" as never);
+    geocodingServiceMock.geocodeAddress.mockResolvedValue({
+      latitude: 48.8566,
+      longitude: 2.3522,
+    });
+    prismaMock.mechanic.create.mockResolvedValue({
+      id_mechanic: 21,
+      email: "garage@test.dev",
+    });
+    jwtMock.sign
+      .mockReturnValueOnce("mechanic-access-token" as never)
+      .mockReturnValueOnce("mechanic-refresh-token" as never);
+
+    const result = await authService.registerMechanic({
+      name: "Garage Test",
+      email: "garage@test.dev",
+      password: "password123",
+      address: "12 rue test",
+      zip_code: 75001,
+      city: "Paris",
+      description: "Garage de test",
+      image_url: "https://cdn.test/garage.jpg",
+      opening_hours: {
+        mon: [{ open: "08:00", close: "18:00" }],
+        tue: [{ open: "08:00", close: "18:00" }],
+        wed: [{ open: "08:00", close: "18:00" }],
+        thu: [{ open: "08:00", close: "18:00" }],
+        fri: [{ open: "08:00", close: "18:00" }],
+        sat: [],
+        sun: [],
+      },
+      siret: "12345678901234",
+    });
+
+    expect(geocodingServiceMock.geocodeAddress).toHaveBeenCalledWith({
+      address: "12 rue test",
+      zipCode: "75001",
+      city: "Paris",
+    });
+    expect(prismaMock.mechanic.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        email: "garage@test.dev",
+        password: "hashed-mechanic-password",
+        latitude: 48.8566,
+        longitude: 2.3522,
+      }),
+    });
+    expect(result).toEqual({
+      accessToken: "mechanic-access-token",
+      refreshToken: "mechanic-refresh-token",
+      user: { id: 21, role: "mechanic", email: "garage@test.dev" },
+    });
+  });
+
+  it("registerMechanic returns null when mechanic already exists", async () => {
+    prismaMock.mechanic.findUnique.mockResolvedValue({ id_mechanic: 4 });
+
+    const result = await authService.registerMechanic({
+      name: "Garage Test",
+      email: "garage@test.dev",
+      password: "password123",
+      address: "12 rue test",
+      zip_code: 75001,
+      city: "Paris",
+      opening_hours: {
+        mon: [{ open: "08:00", close: "18:00" }],
+        tue: [{ open: "08:00", close: "18:00" }],
+        wed: [{ open: "08:00", close: "18:00" }],
+        thu: [{ open: "08:00", close: "18:00" }],
+        fri: [{ open: "08:00", close: "18:00" }],
+        sat: [],
+        sun: [],
+      },
+      siret: "12345678901234",
+    });
+
+    expect(result).toBeNull();
+    expect(geocodingServiceMock.geocodeAddress).not.toHaveBeenCalled();
+    expect(prismaMock.mechanic.create).not.toHaveBeenCalled();
   });
 
   it("refreshToken returns null for invalid token", async () => {

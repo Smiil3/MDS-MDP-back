@@ -1,5 +1,6 @@
 import { type Request, type Response } from "express";
 import { authService } from "../services/auth.service";
+import { GeocodingError } from "../services/geocoding.service";
 import {
   driverLoginSchema,
   driverRegisterSchema,
@@ -54,7 +55,17 @@ export const authController = {
       return;
     }
 
-    const result = await authService.registerMechanic(value);
+    let result;
+    try {
+      result = await authService.registerMechanic(value);
+    } catch (error) {
+      if (error instanceof GeocodingError) {
+        res.status(400).json({ message: error.message });
+        return;
+      }
+
+      throw error;
+    }
 
     if (!result) {
       res.status(409).json({ message: "Mechanic account already exists." });
