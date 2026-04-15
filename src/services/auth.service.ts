@@ -1,8 +1,18 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { getJwtExpiresIn, getJwtSecret } from "../config/auth.config";
+import {
+  getJwtExpiresIn,
+  getJwtRefreshExpiresIn,
+  getJwtRefreshSecret,
+  getJwtSecret,
+} from "../config/auth.config";
 import { prisma } from "../prisma/client";
-import type { AuthRole, AuthTokenPayload } from "../types/auth";
+import {
+  isRefreshTokenPayload,
+  type AuthRole,
+  type AuthTokenPayload,
+  type RefreshTokenPayload,
+} from "../types/auth";
 import type {
   DriverLoginInput,
   DriverRegisterInput,
@@ -11,7 +21,8 @@ import type {
 } from "../validators/auth.validator";
 
 type AuthResponse = {
-  token: string;
+  accessToken: string;
+  refreshToken: string;
   user: {
     id: number;
     role: AuthRole;
@@ -19,13 +30,46 @@ type AuthResponse = {
   };
 };
 
-const createToken = (payload: AuthTokenPayload) =>
-  jwt.sign(payload, getJwtSecret(), { expiresIn: getJwtExpiresIn() });
+const createAccessToken = (payload: Omit<AuthTokenPayload, "tokenType">) =>
+  jwt.sign({ ...payload, tokenType: "access" }, getJwtSecret(), {
+    expiresIn: getJwtExpiresIn(),
+  });
+
+const createRefreshToken = (payload: Omit<RefreshTokenPayload, "tokenType">) =>
+  jwt.sign({ ...payload, tokenType: "refresh" }, getJwtRefreshSecret(), {
+    expiresIn: getJwtRefreshExpiresIn(),
+  });
+
+const verifyRefreshToken = (token: string) => {
+  try {
+    const decoded = jwt.verify(token, getJwtRefreshSecret());
+
+    if (!isRefreshTokenPayload(decoded)) {
+      return null;
+    }
+
+    return decoded;
+  } catch {
+    return null;
+  }
+};
 
 const hashPassword = (password: string) => bcrypt.hash(password, 10);
 
 const comparePassword = (password: string, hash: string) =>
   bcrypt.compare(password, hash);
+
+const createAuthResponse = (user: { id: number; role: AuthRole; email: string }) => ({
+  accessToken: createAccessToken({ sub: String(user.id), role: user.role }),
+  refreshToken: createRefreshToken({ sub: String(user.id), role: user.role }),
+  user,
+});
+
+const parseUserId = (sub: string) => {
+  const userId = Number.parseInt(sub, 10);
+
+  return Number.isNaN(userId) ? null : userId;
+};
 
 export const authService = {
   async registerDriver(input: DriverRegisterInput): Promise<AuthResponse | null> {
@@ -50,14 +94,11 @@ export const authService = {
       },
     });
 
-    return {
-      token: createToken({ sub: String(driver.id_driver), role: "driver" }),
-      user: {
-        id: driver.id_driver,
-        role: "driver",
-        email: driver.email,
-      },
-    };
+    return createAuthResponse({
+      id: driver.id_driver,
+      role: "driver",
+      email: driver.email,
+    });
   },
 
   async loginDriver(input: DriverLoginInput): Promise<AuthResponse | null> {
@@ -75,14 +116,11 @@ export const authService = {
       return null;
     }
 
-    return {
-      token: createToken({ sub: String(driver.id_driver), role: "driver" }),
-      user: {
-        id: driver.id_driver,
-        role: "driver",
-        email: driver.email,
-      },
-    };
+    return createAuthResponse({
+      id: driver.id_driver,
+      role: "driver",
+      email: driver.email,
+    });
   },
 
   async registerMechanic(
@@ -110,14 +148,11 @@ export const authService = {
       },
     });
 
-    return {
-      token: createToken({ sub: String(mechanic.id_mechanic), role: "mechanic" }),
-      user: {
-        id: mechanic.id_mechanic,
-        role: "mechanic",
-        email: mechanic.email,
-      },
-    };
+    return createAuthResponse({
+      id: mechanic.id_mechanic,
+      role: "mechanic",
+      email: mechanic.email,
+    });
   },
 
   async loginMechanic(input: MechanicLoginInput): Promise<AuthResponse | null> {
@@ -135,13 +170,54 @@ export const authService = {
       return null;
     }
 
-    return {
-      token: createToken({ sub: String(mechanic.id_mechanic), role: "mechanic" }),
-      user: {
-        id: mechanic.id_mechanic,
-        role: "mechanic",
-        email: mechanic.email,
-      },
-    };
+    return createAuthResponse({
+      id: mechanic.id_mechanic,
+      role: "mechanic",
+      email: mechanic.email,
+    });
+  },
+
+  async refreshToken(token: string): Promise<AuthResponse | null> {
+    const payload = verifyRefreshToken(token);
+
+    if (!payload) {
+      return null;
+    }
+
+    const userId = parseUserId(payload.sub);
+
+    if (!userId) {
+      return null;
+    }
+
+    if (payload.role === "driver") {
+      const driver = await prisma.driver.findUnique({
+        where: { id_driver: userId },
+      });
+
+      if (!driver) {
+        return null;
+      }
+
+      return createAuthResponse({
+        id: driver.id_driver,
+        role: "driver",
+        email: driver.email,
+      });
+    }
+
+    const mechanic = await prisma.mechanic.findUnique({
+      where: { id_mechanic: userId },
+    });
+
+    if (!mechanic) {
+      return null;
+    }
+
+    return createAuthResponse({
+      id: mechanic.id_mechanic,
+      role: "mechanic",
+      email: mechanic.email,
+    });
   },
 };

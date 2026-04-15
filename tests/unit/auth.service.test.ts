@@ -23,11 +23,14 @@ jest.mock("bcrypt", () => ({
 
 jest.mock("jsonwebtoken", () => ({
   sign: jest.fn(),
+  verify: jest.fn(),
 }));
 
 jest.mock("../../src/config/auth.config", () => ({
   getJwtSecret: jest.fn(() => "test-secret"),
   getJwtExpiresIn: jest.fn(() => "1h"),
+  getJwtRefreshSecret: jest.fn(() => "test-refresh-secret"),
+  getJwtRefreshExpiresIn: jest.fn(() => "7d"),
 }));
 
 const prismaMock = prisma as unknown as {
@@ -67,14 +70,16 @@ describe("auth.service", () => {
     expect(bcryptMock.hash).not.toHaveBeenCalled();
   });
 
-  it("registerDriver creates user and returns token", async () => {
+  it("registerDriver creates user and returns tokens", async () => {
     prismaMock.driver.findUnique.mockResolvedValue(null);
     bcryptMock.hash.mockResolvedValue("hashed-password" as never);
     prismaMock.driver.create.mockResolvedValue({
       id_driver: 10,
       email: "john@test.dev",
     });
-    jwtMock.sign.mockReturnValue("jwt-token" as never);
+    jwtMock.sign
+      .mockReturnValueOnce("access-token" as never)
+      .mockReturnValueOnce("refresh-token" as never);
 
     const result = await authService.registerDriver({
       last_name: "Doe",
@@ -93,7 +98,8 @@ describe("auth.service", () => {
       }),
     });
     expect(result).toEqual({
-      token: "jwt-token",
+      accessToken: "access-token",
+      refreshToken: "refresh-token",
       user: { id: 10, role: "driver", email: "john@test.dev" },
     });
   });
@@ -114,14 +120,16 @@ describe("auth.service", () => {
     expect(result).toBeNull();
   });
 
-  it("loginMechanic returns token when credentials are valid", async () => {
+  it("loginMechanic returns tokens when credentials are valid", async () => {
     prismaMock.mechanic.findUnique.mockResolvedValue({
       id_mechanic: 21,
       email: "garage@test.dev",
       password: "hashed-password",
     });
     bcryptMock.compare.mockResolvedValue(true as never);
-    jwtMock.sign.mockReturnValue("mechanic-token" as never);
+    jwtMock.sign
+      .mockReturnValueOnce("mechanic-access-token" as never)
+      .mockReturnValueOnce("mechanic-refresh-token" as never);
 
     const result = await authService.loginMechanic({
       email: "garage@test.dev",
@@ -129,8 +137,42 @@ describe("auth.service", () => {
     });
 
     expect(result).toEqual({
-      token: "mechanic-token",
+      accessToken: "mechanic-access-token",
+      refreshToken: "mechanic-refresh-token",
       user: { id: 21, role: "mechanic", email: "garage@test.dev" },
+    });
+  });
+
+  it("refreshToken returns null for invalid token", async () => {
+    jwtMock.verify.mockImplementation(() => {
+      throw new Error("invalid");
+    });
+
+    const result = await authService.refreshToken("bad-token");
+
+    expect(result).toBeNull();
+  });
+
+  it("refreshToken returns new tokens for valid driver refresh token", async () => {
+    jwtMock.verify.mockReturnValue({
+      sub: "7",
+      role: "driver",
+      tokenType: "refresh",
+    } as never);
+    prismaMock.driver.findUnique.mockResolvedValue({
+      id_driver: 7,
+      email: "driver@test.dev",
+    });
+    jwtMock.sign
+      .mockReturnValueOnce("new-access-token" as never)
+      .mockReturnValueOnce("new-refresh-token" as never);
+
+    const result = await authService.refreshToken("valid-refresh-token");
+
+    expect(result).toEqual({
+      accessToken: "new-access-token",
+      refreshToken: "new-refresh-token",
+      user: { id: 7, role: "driver", email: "driver@test.dev" },
     });
   });
 });
