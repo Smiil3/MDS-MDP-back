@@ -6,6 +6,7 @@ type CreateBookingInput = {
   id_mechanic: number;
   id_booking_status: number;
   id_driver: number;
+  id_vehicle?: number;
 };
 
 type UpdateBookingInput = Partial<CreateBookingInput>;
@@ -15,6 +16,7 @@ const bookingSelect = {
   appointment_date: true,
   total_amount: true,
   created_at: true,
+  updated_at: true,
   booking_status: {
     select: {
       id_booking_status: true,
@@ -38,6 +40,15 @@ const bookingSelect = {
       phone: true,
     },
   },
+  vehicle: {
+    select: {
+      id_vehicle: true,
+      brand: true,
+      model: true,
+      license_plate: true,
+      fuel_type: true,
+    },
+  },
 };
 
 export const bookingService = {
@@ -53,10 +64,10 @@ export const bookingService = {
       data: {
         appointment_date: new Date(data.appointment_date),
         total_amount: data.total_amount,
-        created_at: new Date(),
         id_mechanic: data.id_mechanic,
         id_booking_status: data.id_booking_status,
         id_driver: data.id_driver,
+        id_vehicle: data.id_vehicle,
       },
       select: bookingSelect,
     });
@@ -71,6 +82,7 @@ export const bookingService = {
         ...(data.id_mechanic !== undefined && { id_mechanic: data.id_mechanic }),
         ...(data.id_booking_status !== undefined && { id_booking_status: data.id_booking_status }),
         ...(data.id_driver !== undefined && { id_driver: data.id_driver }),
+        ...(data.id_vehicle !== undefined && { id_vehicle: data.id_vehicle }),
       },
       select: bookingSelect,
     });
