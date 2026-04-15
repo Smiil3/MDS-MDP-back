@@ -34,7 +34,7 @@ describe("auth.middleware", () => {
   });
 
   it("returns 403 when role is not allowed", () => {
-    const token = jwt.sign({ sub: "1", role: "driver" }, secret, {
+    const token = jwt.sign({ sub: "1", role: "driver", tokenType: "access" }, secret, {
       expiresIn: "1h",
     });
     const req = {
@@ -49,8 +49,24 @@ describe("auth.middleware", () => {
     expect(next).not.toHaveBeenCalled();
   });
 
+  it("returns 401 for non-access token payload", () => {
+    const token = jwt.sign({ sub: "2", role: "mechanic", tokenType: "refresh" }, secret, {
+      expiresIn: "1h",
+    });
+    const req = {
+      headers: { authorization: `Bearer ${token}` },
+    } as Request;
+    const res = createResponse();
+    const next = jest.fn() as NextFunction;
+
+    authMiddleware(["mechanic"])(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(next).not.toHaveBeenCalled();
+  });
+
   it("sets req.authUser and calls next for a valid token", () => {
-    const token = jwt.sign({ sub: "2", role: "mechanic" }, secret, {
+    const token = jwt.sign({ sub: "2", role: "mechanic", tokenType: "access" }, secret, {
       expiresIn: "1h",
     });
     const req = {
