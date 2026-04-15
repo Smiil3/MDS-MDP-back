@@ -55,6 +55,8 @@ describe("garage.service", () => {
         name: "Alpha Garage",
         city: "Lyon",
         address: "1 rue A",
+        latitude: null,
+        longitude: null,
         imageUrl: null,
         openingHours: weekdayOpeningHours,
         description: "Garage A",
@@ -97,6 +99,8 @@ describe("garage.service", () => {
 
     expect(result).toHaveLength(2);
     expect(result[0].name).toBe("Near Garage");
+    expect(result[0].latitude).toBe(48.857);
+    expect(result[0].longitude).toBe(2.3523);
     expect(result[0].distanceMeters).not.toBeNull();
     expect(result[1].name).toBe("Far Garage");
   });
