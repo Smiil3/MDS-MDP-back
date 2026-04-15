@@ -1,6 +1,7 @@
 import express from "express";
 import { authRouter } from "./routes/auth.route";
 import { bookingRouter } from "./routes/booking.route";
+import { garageRouter } from "./routes/garage.route";
 import { mechanicRouter } from "./routes/mechanic.route";
 import { userRouter } from "./routes/user.route";
 
@@ -16,3 +17,4 @@ app.use("/api/users", userRouter);
 app.use("/api/mechanics", mechanicRouter);
 app.use("/api/bookings", bookingRouter);
 app.use("/api/auth", authRouter);
+app.use("/api/garages", garageRouter);
