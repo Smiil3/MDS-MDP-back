@@ -7,11 +7,14 @@
     "outDir": "dist",
     "esModuleInterop": true,
     "strict": true,
+    "types": ["node", "jest"],
+    "isolatedModules": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },
   "include": [
-    "src/**/*.ts"
+    "src/**/*.ts",
+    "src/**/*.d.ts"
   ],
   "exclude": [
     "node_modules",
