@@ -1,10 +1,11 @@
 import express from "express";
+import cors from "cors";
 import { authRouter } from "./routes/auth.route";
 import { bookingRouter } from "./routes/booking.route";
 import { garageRouter } from "./routes/garage.route";
+import { locationRouter } from "./routes/location.route";
 import { mechanicRouter } from "./routes/mechanic.route";
 import { userRouter } from "./routes/user.route";
-const cors = require("cors");
 
 export const app = express();
 
@@ -20,3 +21,4 @@ app.use("/api/mechanics", mechanicRouter);
 app.use("/api/bookings", bookingRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/garages", garageRouter);
+app.use("/api/location", locationRouter);

@@ -32,6 +32,8 @@ type AuthResponse = {
   };
 };
 
+export class MissingSubscriptionError extends Error {}
+
 const createAccessToken = (payload: Omit<AuthTokenPayload, "tokenType">) =>
   jwt.sign({ ...payload, tokenType: "access" }, getJwtSecret(), {
     expiresIn: getJwtExpiresIn(),
@@ -73,6 +75,23 @@ const parseUserId = (sub: string) => {
   return Number.isNaN(userId) ? null : userId;
 };
 
+const resolveDriverSubscriptionId = async (idSubscription?: number) => {
+  if (typeof idSubscription === "number") {
+    return idSubscription;
+  }
+
+  const defaultSubscription = await prisma.subscription.findFirst({
+    select: { id_subscription: true },
+    orderBy: { id_subscription: "asc" },
+  });
+
+  if (!defaultSubscription) {
+    throw new MissingSubscriptionError("No subscription is available for driver registration.");
+  }
+
+  return defaultSubscription.id_subscription;
+};
+
 const mapMechanicServices = (
   idMechanic: number,
   categories: MechanicRegisterInput["services"],
@@ -99,6 +118,7 @@ export const authService = {
       return null;
     }
 
+    const resolvedSubscriptionId = await resolveDriverSubscriptionId(input.id_subscription);
     const passwordHash = await hashPassword(input.password);
     const driver = await prisma.driver.create({
       data: {
@@ -108,7 +128,7 @@ export const authService = {
         password: passwordHash,
         phone: input.phone,
         birth_date: new Date(input.birth_date),
-        id_subscription: input.id_subscription,
+        id_subscription: resolvedSubscriptionId,
       },
     });
 
