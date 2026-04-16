@@ -1,5 +1,5 @@
 import { type Request, type Response } from "express";
-import { authService } from "../services/auth.service";
+import { authService, MissingSubscriptionError } from "../services/auth.service";
 import { GeocodingError } from "../services/geocoding.service";
 import {
   driverLoginSchema,
@@ -19,7 +19,16 @@ export const authController = {
       return;
     }
 
-    const result = await authService.registerDriver(value);
+    let result;
+    try {
+      result = await authService.registerDriver(value);
+    } catch (error) {
+      if (error instanceof MissingSubscriptionError) {
+        res.status(400).json({ message: error.message });
+        return;
+      }
+      throw error;
+    }
 
     if (!result) {
       res.status(409).json({ message: "Driver account already exists." });
