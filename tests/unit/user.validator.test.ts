@@ -1,4 +1,8 @@
-import { createUserSchema } from "../../src/validators/user.validator";
+import {
+  createUserSchema,
+  createVehicleSchema,
+  updateDriverProfileSchema,
+} from "../../src/validators/user.validator";
 import { validatePayload } from "../../src/validators/validator.utils";
 
 describe("user.validator", () => {
@@ -37,6 +41,47 @@ describe("user.validator", () => {
   it("rejects invalid create user payload", () => {
     const result = validatePayload(createUserSchema, {
       email: "not-an-email",
+    });
+
+    expect(result.value).toBeUndefined();
+    expect(result.errors).toBeDefined();
+  });
+
+  it("accepts a valid update profile payload", () => {
+    const result = validatePayload(updateDriverProfileSchema, {
+      first_name: "John",
+      image_url: "https://img/avatar.jpg",
+    });
+
+    expect(result.errors).toBeUndefined();
+    expect(result.value).toBeDefined();
+  });
+
+  it("rejects empty update profile payload", () => {
+    const result = validatePayload(updateDriverProfileSchema, {});
+    expect(result.value).toBeUndefined();
+    expect(result.errors).toBeDefined();
+  });
+
+  it("accepts a valid create vehicle payload", () => {
+    const result = validatePayload(createVehicleSchema, {
+      brand: "Peugeot",
+      model: "208",
+      year: 2020,
+      engine: "1.2 PureTech",
+      license_plate: "AA-123-BB",
+      mileage: 45000,
+      fuel_type: "Essence",
+    });
+
+    expect(result.errors).toBeUndefined();
+    expect(result.value).toBeDefined();
+  });
+
+  it("rejects invalid create vehicle payload", () => {
+    const result = validatePayload(createVehicleSchema, {
+      brand: "Peugeot",
+      mileage: -1,
     });
 
     expect(result.value).toBeUndefined();
