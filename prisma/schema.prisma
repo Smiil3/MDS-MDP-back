@@ -54,6 +54,7 @@ model driver {
 
 model garage_service {
   id_garage_service Int       @id @default(autoincrement())
+  category          String    @db.VarChar(100)
   label             String    @db.VarChar(50)
   price             Decimal   @db.Decimal(15, 2)
   description       String    @db.Text

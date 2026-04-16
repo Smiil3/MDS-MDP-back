@@ -15,6 +15,17 @@ export type GarageCardDto = {
   distanceMeters: number | null;
 };
 
+export type GarageServiceDto = {
+  serviceName: string;
+  price: number;
+};
+
+export type GarageServicesDto = Record<string, GarageServiceDto[]>[];
+
+export type GarageDetailsDto = Omit<GarageCardDto, "distanceMeters"> & {
+  services: GarageServicesDto;
+};
+
 type MechanicProjection = {
   id_mechanic: number;
   name: string;
@@ -25,6 +36,14 @@ type MechanicProjection = {
   description: string | null;
   latitude: number | null;
   longitude: number | null;
+};
+
+type MechanicDetailsProjection = MechanicProjection & {
+  garage_service: {
+    category: string;
+    label: string;
+    price: Prisma.Decimal;
+  }[];
 };
 
 const EARTH_RADIUS_METERS = 6_371_000;
@@ -66,6 +85,39 @@ const toGarageCardDto = (
   openingHours: mechanic.opening_hours,
   description: mechanic.description,
   distanceMeters,
+});
+
+const toCategorizedServices = (
+  services: MechanicDetailsProjection["garage_service"],
+): GarageServicesDto => {
+  const grouped = services.reduce<Record<string, GarageServiceDto[]>>((accumulator, service) => {
+    const category = service.category.trim();
+    if (!accumulator[category]) {
+      accumulator[category] = [];
+    }
+    accumulator[category].push({
+      serviceName: service.label,
+      price: Number(service.price),
+    });
+    return accumulator;
+  }, {});
+
+  return Object.entries(grouped).map(([category, categoryServices]) => ({
+    [category]: categoryServices,
+  }));
+};
+
+const toGarageDetailsDto = (mechanic: MechanicDetailsProjection): GarageDetailsDto => ({
+  id: mechanic.id_mechanic,
+  name: mechanic.name,
+  city: mechanic.city,
+  address: mechanic.address,
+  latitude: mechanic.latitude,
+  longitude: mechanic.longitude,
+  imageUrl: mechanic.image_url,
+  openingHours: mechanic.opening_hours,
+  description: mechanic.description,
+  services: toCategorizedServices(mechanic.garage_service),
 });
 
 const buildSearchWhere = (search: string | undefined): Prisma.mechanicWhereInput => {
@@ -156,5 +208,38 @@ export const garageService = {
     return withDistance.map(({ mechanic, distanceMeters }) =>
       toGarageCardDto(mechanic, Math.round(distanceMeters)),
     );
+  },
+
+  async findById(garageId: number): Promise<GarageDetailsDto | null> {
+    const mechanic = await prisma.mechanic.findUnique({
+      where: {
+        id_mechanic: garageId,
+      },
+      select: {
+        id_mechanic: true,
+        name: true,
+        city: true,
+        address: true,
+        image_url: true,
+        opening_hours: true,
+        description: true,
+        latitude: true,
+        longitude: true,
+        garage_service: {
+          select: {
+            category: true,
+            label: true,
+            price: true,
+          },
+          orderBy: [{ category: "asc" }, { id_garage_service: "asc" }],
+        },
+      },
+    });
+
+    if (!mechanic) {
+      return null;
+    }
+
+    return toGarageDetailsDto(mechanic);
   },
 };

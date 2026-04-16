@@ -96,6 +96,14 @@ describe("auth routes (component)", () => {
         sat: [],
         sun: [],
       },
+      services: [
+        {
+          vidange: [
+            { serviceName: "Filtres", price: 12 },
+            { serviceName: "Filtres + huile", price: 24 },
+          ],
+        },
+      ],
       siret: "12345678901234",
     });
 
@@ -128,6 +136,13 @@ describe("auth routes (component)", () => {
         sat: [],
         sun: [],
       },
+      services: [
+        {
+          vidange: [
+            { serviceName: "Filtres", price: 12 },
+          ],
+        },
+      ],
       siret: "12345678901234",
     });
 

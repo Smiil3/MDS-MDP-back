@@ -17,6 +17,7 @@ export type DriverLoginInput = {
 };
 
 export type MechanicRegisterInput = {
+  services: Record<string, { serviceName: string; price: number }[]>[];
   name: string;
   email: string;
   password: string;
@@ -72,6 +73,24 @@ const openingHoursSchema = Joi.object({
   sun: Joi.array().items(openingHourSlotSchema).required(),
 }).required();
 
+const mechanicServiceSchema = Joi.object({
+  serviceName: Joi.string().trim().min(1).required(),
+  price: Joi.number().positive().required(),
+}).required();
+
+const mechanicServicesSchema = Joi.array()
+  .items(
+    Joi.object()
+      .pattern(
+        Joi.string().trim().min(1),
+        Joi.array().items(mechanicServiceSchema).min(1).required(),
+      )
+      .min(1)
+      .required(),
+  )
+  .min(1)
+  .required();
+
 export const driverRegisterSchema = Joi.object<DriverRegisterInput>({
   last_name: Joi.string().required(),
   first_name: Joi.string().required(),
@@ -97,6 +116,7 @@ export const mechanicRegisterSchema = Joi.object<MechanicRegisterInput>({
   description: Joi.string().allow("").optional(),
   image_url: Joi.string().uri().optional(),
   opening_hours: openingHoursSchema,
+  services: mechanicServicesSchema,
   siret: Joi.string().pattern(/^\d{14}$/).required(),
 }).required();
 

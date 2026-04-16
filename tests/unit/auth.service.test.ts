@@ -6,6 +6,7 @@ import { prisma } from "../../src/prisma/client";
 
 jest.mock("../../src/prisma/client", () => ({
   prisma: {
+    $transaction: jest.fn(),
     driver: {
       findUnique: jest.fn(),
       create: jest.fn(),
@@ -13,6 +14,9 @@ jest.mock("../../src/prisma/client", () => ({
     mechanic: {
       findUnique: jest.fn(),
       create: jest.fn(),
+    },
+    garage_service: {
+      createMany: jest.fn(),
     },
   },
 }));
@@ -41,6 +45,7 @@ jest.mock("../../src/services/geocoding.service", () => ({
 }));
 
 const prismaMock = prisma as unknown as {
+  $transaction: jest.Mock;
   driver: {
     findUnique: jest.Mock;
     create: jest.Mock;
@@ -48,6 +53,9 @@ const prismaMock = prisma as unknown as {
   mechanic: {
     findUnique: jest.Mock;
     create: jest.Mock;
+  };
+  garage_service: {
+    createMany: jest.Mock;
   };
 };
 
@@ -58,6 +66,24 @@ const geocodingServiceMock = geocodingService as jest.Mocked<typeof geocodingSer
 describe("auth.service", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    jwtMock.sign.mockReset();
+    jwtMock.verify.mockReset();
+    bcryptMock.hash.mockReset();
+    bcryptMock.compare.mockReset();
+    geocodingServiceMock.geocodeAddress.mockReset();
+
+    prismaMock.$transaction.mockImplementation(
+      async (
+        handler: (transaction: {
+          mechanic: { create: jest.Mock };
+          garage_service: { createMany: jest.Mock };
+        }) => Promise<unknown>,
+      ) =>
+        handler({
+          mechanic: { create: prismaMock.mechanic.create },
+          garage_service: { createMany: prismaMock.garage_service.createMany },
+        }),
+    );
   });
 
   it("registerDriver returns null when email already exists", async () => {
@@ -184,6 +210,14 @@ describe("auth.service", () => {
         sat: [],
         sun: [],
       },
+      services: [
+        {
+          vidange: [
+            { serviceName: "Filtres", price: 12 },
+            { serviceName: "Filtres + huile", price: 24 },
+          ],
+        },
+      ],
       siret: "12345678901234",
     });
 
@@ -199,6 +233,24 @@ describe("auth.service", () => {
         latitude: 48.8566,
         longitude: 2.3522,
       }),
+    });
+    expect(prismaMock.garage_service.createMany).toHaveBeenCalledWith({
+      data: [
+        {
+          id_mechanic: 21,
+          category: "vidange",
+          label: "Filtres",
+          price: 12,
+          description: "",
+        },
+        {
+          id_mechanic: 21,
+          category: "vidange",
+          label: "Filtres + huile",
+          price: 24,
+          description: "",
+        },
+      ],
     });
     expect(result).toEqual({
       accessToken: "mechanic-access-token",
@@ -226,6 +278,7 @@ describe("auth.service", () => {
         sat: [],
         sun: [],
       },
+      services: [{ vidange: [{ serviceName: "Filtres", price: 12 }] }],
       siret: "12345678901234",
     });
 

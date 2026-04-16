@@ -73,6 +73,22 @@ const parseUserId = (sub: string) => {
   return Number.isNaN(userId) ? null : userId;
 };
 
+const mapMechanicServices = (
+  idMechanic: number,
+  categories: MechanicRegisterInput["services"],
+) =>
+  categories.flatMap((categoryObject) =>
+    Object.entries(categoryObject).flatMap(([category, services]) =>
+      services.map((service) => ({
+        id_mechanic: idMechanic,
+        category,
+        label: service.serviceName,
+        price: service.price,
+        description: "",
+      })),
+    ),
+  );
+
 export const authService = {
   async registerDriver(input: DriverRegisterInput): Promise<AuthResponse | null> {
     const existingDriver = await prisma.driver.findUnique({
@@ -142,21 +158,32 @@ export const authService = {
       zipCode: String(input.zip_code),
       city: input.city,
     });
-    const mechanic = await prisma.mechanic.create({
-      data: {
-        name: input.name,
-        email: input.email,
-        password: passwordHash,
-        address: input.address,
-        zip_code: input.zip_code,
-        city: input.city,
-        description: input.description,
-        image_url: input.image_url,
-        opening_hours: input.opening_hours as Prisma.InputJsonValue,
-        latitude,
-        longitude,
-        siret: input.siret,
-      },
+    const mechanic = await prisma.$transaction(async (transaction) => {
+      const createdMechanic = await transaction.mechanic.create({
+        data: {
+          name: input.name,
+          email: input.email,
+          password: passwordHash,
+          address: input.address,
+          zip_code: input.zip_code,
+          city: input.city,
+          description: input.description,
+          image_url: input.image_url,
+          opening_hours: input.opening_hours as Prisma.InputJsonValue,
+          latitude,
+          longitude,
+          siret: input.siret,
+        },
+      });
+
+      const services = mapMechanicServices(createdMechanic.id_mechanic, input.services);
+      if (services.length > 0) {
+        await transaction.garage_service.createMany({
+          data: services,
+        });
+      }
+
+      return createdMechanic;
     });
 
     return createAuthResponse({

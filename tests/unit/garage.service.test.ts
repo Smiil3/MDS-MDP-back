@@ -6,6 +6,7 @@ jest.mock("../../src/prisma/client", () => ({
   prisma: {
     mechanic: {
       findMany: jest.fn(),
+      findUnique: jest.fn(),
     },
   },
 }));
@@ -13,6 +14,7 @@ jest.mock("../../src/prisma/client", () => ({
 const prismaMock = prisma as unknown as {
   mechanic: {
     findMany: jest.Mock;
+    findUnique: jest.Mock;
   };
 };
 
@@ -103,5 +105,72 @@ describe("garage.service", () => {
     expect(result[0].longitude).toBe(2.3523);
     expect(result[0].distanceMeters).not.toBeNull();
     expect(result[1].name).toBe("Far Garage");
+  });
+
+  it("returns garage details with categorized services", async () => {
+    prismaMock.mechanic.findUnique.mockResolvedValue({
+      id_mechanic: 7,
+      name: "Garage Details",
+      city: "Paris",
+      address: "7 rue test",
+      image_url: "https://img/details.jpg",
+      opening_hours: weekdayOpeningHours,
+      description: "Garage detail description",
+      latitude: 48.8566,
+      longitude: 2.3522,
+      garage_service: [
+        {
+          category: "vidange",
+          label: "Filtres",
+          price: new Prisma.Decimal(12),
+        },
+        {
+          category: "vidange",
+          label: "Filtres + huile",
+          price: new Prisma.Decimal(24),
+        },
+        {
+          category: "freinage",
+          label: "Plaquettes",
+          price: new Prisma.Decimal(80),
+        },
+      ],
+    });
+
+    const result = await garageService.findById(7);
+
+    expect(prismaMock.mechanic.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id_mechanic: 7 },
+      }),
+    );
+    expect(result).toEqual({
+      id: 7,
+      name: "Garage Details",
+      city: "Paris",
+      address: "7 rue test",
+      latitude: 48.8566,
+      longitude: 2.3522,
+      imageUrl: "https://img/details.jpg",
+      openingHours: weekdayOpeningHours,
+      description: "Garage detail description",
+      services: [
+        {
+          vidange: [
+            { serviceName: "Filtres", price: 12 },
+            { serviceName: "Filtres + huile", price: 24 },
+          ],
+        },
+        {
+          freinage: [{ serviceName: "Plaquettes", price: 80 }],
+        },
+      ],
+    });
+  });
+
+  it("returns null when garage details are missing", async () => {
+    prismaMock.mechanic.findUnique.mockResolvedValue(null);
+    const result = await garageService.findById(99);
+    expect(result).toBeNull();
   });
 });

@@ -7,6 +7,10 @@ export type NearbyGaragesQuery = {
   limit?: number;
 };
 
+export type GarageIdParam = {
+  id: number;
+};
+
 export const nearbyGaragesQuerySchema = Joi.object<NearbyGaragesQuery>({
   lat: Joi.number().min(-90).max(90).optional(),
   lng: Joi.number().min(-180).max(180).optional(),
@@ -38,6 +42,25 @@ export const validateNearbyGaragesQuery = (query: unknown) => {
           ? "lat and lng must be provided together."
           : detail.message,
       ),
+    };
+  }
+
+  return { value };
+};
+
+const garageIdParamSchema = Joi.object<GarageIdParam>({
+  id: Joi.number().integer().positive().required(),
+}).required();
+
+export const validateGarageIdParam = (params: unknown) => {
+  const { error, value } = garageIdParamSchema.validate(params, {
+    abortEarly: false,
+    stripUnknown: true,
+  });
+
+  if (error) {
+    return {
+      errors: error.details.map((detail) => detail.message),
     };
   }
 

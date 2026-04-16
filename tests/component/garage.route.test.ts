@@ -5,6 +5,7 @@ import { garageService } from "../../src/services/garage.service";
 jest.mock("../../src/services/garage.service", () => ({
   garageService: {
     findNearby: jest.fn(),
+    findById: jest.fn(),
   },
 }));
 
@@ -64,6 +65,70 @@ describe("garage routes (component)", () => {
           distanceMeters: 320,
         },
       ],
+    });
+  });
+
+  it("GET /api/garages/:id returns 400 on invalid id", async () => {
+    const response = await request(app).get("/api/garages/abc");
+
+    expect(response.status).toBe(400);
+    expect(garageServiceMock.findById).not.toHaveBeenCalled();
+  });
+
+  it("GET /api/garages/:id returns 404 when garage does not exist", async () => {
+    garageServiceMock.findById.mockResolvedValue(null);
+
+    const response = await request(app).get("/api/garages/99");
+
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual({ message: "Garage not found." });
+  });
+
+  it("GET /api/garages/:id returns 200 with wrapped garage payload", async () => {
+    garageServiceMock.findById.mockResolvedValue({
+      id: 1,
+      name: "Garage Paris Centre",
+      city: "Paris",
+      address: "1 rue de Rivoli",
+      latitude: 48.8566,
+      longitude: 2.3522,
+      imageUrl: "https://cdn.test/garage.jpg",
+      openingHours: { mon: [{ open: "08:00", close: "18:00" }] },
+      description: "Réparation auto rapide",
+      services: [
+        {
+          vidange: [
+            { serviceName: "Filtres", price: 12 },
+            { serviceName: "Filtres + huile", price: 24 },
+          ],
+        },
+      ],
+    });
+
+    const response = await request(app).get("/api/garages/1");
+
+    expect(response.status).toBe(200);
+    expect(garageServiceMock.findById).toHaveBeenCalledWith(1);
+    expect(response.body).toEqual({
+      garage: {
+        id: 1,
+        name: "Garage Paris Centre",
+        city: "Paris",
+        address: "1 rue de Rivoli",
+        latitude: 48.8566,
+        longitude: 2.3522,
+        imageUrl: "https://cdn.test/garage.jpg",
+        openingHours: { mon: [{ open: "08:00", close: "18:00" }] },
+        description: "Réparation auto rapide",
+        services: [
+          {
+            vidange: [
+              { serviceName: "Filtres", price: 12 },
+              { serviceName: "Filtres + huile", price: 24 },
+            ],
+          },
+        ],
+      },
     });
   });
 });

@@ -62,6 +62,14 @@ describe("auth.validator", () => {
         sat: [],
         sun: [],
       },
+      services: [
+        {
+          vidange: [
+            { serviceName: "Filtres", price: 12 },
+            { serviceName: "Filtres + huile", price: 24 },
+          ],
+        },
+      ],
       siret: "12345678901234",
     });
 
@@ -86,6 +94,7 @@ describe("auth.validator", () => {
         sat: [],
         sun: [],
       },
+      services: [{ vidange: [{ serviceName: "Filtres", price: 12 }] }],
       siret: "ABC123",
     });
 
@@ -101,6 +110,31 @@ describe("auth.validator", () => {
     expect(result.value).toBeUndefined();
     expect(result.errors).toBeDefined();
     expect(result.errors).toHaveLength(1);
+  });
+
+  it("rejects mechanic register payload with invalid services structure", () => {
+    const result = validatePayload(mechanicRegisterSchema, {
+      name: "Garage Nord",
+      email: "garage@test.dev",
+      password: "password123",
+      address: "12 rue test",
+      zip_code: 75001,
+      city: "Paris",
+      opening_hours: {
+        mon: [{ open: "08:00", close: "18:00" }],
+        tue: [{ open: "08:00", close: "18:00" }],
+        wed: [{ open: "08:00", close: "18:00" }],
+        thu: [{ open: "08:00", close: "18:00" }],
+        fri: [{ open: "08:00", close: "18:00" }],
+        sat: [],
+        sun: [],
+      },
+      services: [{ vidange: [{ serviceName: "", price: 12 }] }],
+      siret: "12345678901234",
+    });
+
+    expect(result.value).toBeUndefined();
+    expect(result.errors).toBeDefined();
   });
 
   it("accepts valid refresh token payload", () => {
