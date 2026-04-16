@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import { authRouter } from "./routes/auth.route";
 import { bookingRouter } from "./routes/booking.route";
+import { bookingStatusRouter } from "./routes/bookingStatus.route";
 import { garageRouter } from "./routes/garage.route";
 import { locationRouter } from "./routes/location.route";
 import { mechanicRouter } from "./routes/mechanic.route";
@@ -19,6 +20,7 @@ app.get("/health", (_req, res) => {
 app.use("/api/users", userRouter);
 app.use("/api/mechanics", mechanicRouter);
 app.use("/api/bookings", bookingRouter);
+app.use("/api/booking-statuses", bookingStatusRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/garages", garageRouter);
 app.use("/api/location", locationRouter);

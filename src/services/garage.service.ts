@@ -134,6 +134,10 @@ const buildSearchWhere = (search: string | undefined): Prisma.mechanicWhereInput
   };
 };
 
+export type BookedSlotDto = {
+  appointmentDate: string;
+};
+
 export const garageService = {
   async findNearby(query: NearbyGaragesQuery): Promise<GarageCardDto[]> {
     const limit = query.limit ?? 5;
@@ -208,6 +212,31 @@ export const garageService = {
     return withDistance.map(({ mechanic, distanceMeters }) =>
       toGarageCardDto(mechanic, Math.round(distanceMeters)),
     );
+  },
+
+  async findBookedSlots(garageId: number, date: string): Promise<BookedSlotDto[]> {
+    const dayStart = new Date(`${date}T00:00:00.000Z`);
+    const dayEnd = new Date(`${date}T23:59:59.999Z`);
+
+    const bookings = await prisma.booking.findMany({
+      where: {
+        id_mechanic: garageId,
+        appointment_date: {
+          gte: dayStart,
+          lte: dayEnd,
+        },
+      },
+      select: {
+        appointment_date: true,
+      },
+      orderBy: {
+        appointment_date: "asc",
+      },
+    });
+
+    return bookings.map((booking) => ({
+      appointmentDate: booking.appointment_date.toISOString(),
+    }));
   },
 
   async findById(garageId: number): Promise<GarageDetailsDto | null> {

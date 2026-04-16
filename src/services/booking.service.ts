@@ -1,15 +1,5 @@
 import { prisma } from "../prisma/client";
-
-type CreateBookingInput = {
-  appointment_date: string;
-  total_amount: number;
-  id_mechanic: number;
-  id_booking_status: number;
-  id_driver: number;
-  id_vehicle?: number;
-};
-
-type UpdateBookingInput = Partial<CreateBookingInput>;
+import type { CreateBookingInput, UpdateBookingInput } from "../validators/booking.validator";
 
 const bookingSelect = {
   id_booking: true,
@@ -27,8 +17,8 @@ const bookingSelect = {
     select: {
       id_mechanic: true,
       name: true,
-      email: true,
       city: true,
+      address: true,
     },
   },
   driver: {
@@ -49,6 +39,18 @@ const bookingSelect = {
       fuel_type: true,
     },
   },
+  booking_garage_service: {
+    select: {
+      garage_service: {
+        select: {
+          id_garage_service: true,
+          category: true,
+          label: true,
+          price: true,
+        },
+      },
+    },
+  },
 };
 
 export const bookingService = {
@@ -59,17 +61,37 @@ export const bookingService = {
     });
   },
 
-  create(data: CreateBookingInput) {
-    return prisma.booking.create({
-      data: {
-        appointment_date: new Date(data.appointment_date),
-        total_amount: data.total_amount,
-        id_mechanic: data.id_mechanic,
-        id_booking_status: data.id_booking_status,
-        id_driver: data.id_driver,
-        id_vehicle: data.id_vehicle,
-      },
+  findByDriverId(driverId: number) {
+    return prisma.booking.findMany({
+      where: { id_driver: driverId },
       select: bookingSelect,
+      orderBy: { appointment_date: "desc" },
+    });
+  },
+
+  async create(data: CreateBookingInput & { id_driver: number }) {
+    const services = await prisma.garage_service.findMany({
+      where: { id_garage_service: { in: data.service_ids } },
+      select: { id_garage_service: true, price: true },
+    });
+
+    const total_amount = services.reduce((sum, s) => sum + Number(s.price), 0);
+
+    return prisma.$transaction(async (tx) => {
+      return tx.booking.create({
+        data: {
+          appointment_date: new Date(data.appointment_date),
+          total_amount,
+          id_mechanic: data.id_mechanic,
+          id_booking_status: data.id_booking_status,
+          id_driver: data.id_driver,
+          id_vehicle: data.id_vehicle,
+          booking_garage_service: {
+            create: services.map((s) => ({ id_garage_service: s.id_garage_service })),
+          },
+        },
+        select: bookingSelect,
+      });
     });
   },
 
@@ -78,10 +100,7 @@ export const bookingService = {
       where: { id_booking: id },
       data: {
         ...(data.appointment_date && { appointment_date: new Date(data.appointment_date) }),
-        ...(data.total_amount !== undefined && { total_amount: data.total_amount }),
-        ...(data.id_mechanic !== undefined && { id_mechanic: data.id_mechanic }),
         ...(data.id_booking_status !== undefined && { id_booking_status: data.id_booking_status }),
-        ...(data.id_driver !== undefined && { id_driver: data.id_driver }),
         ...(data.id_vehicle !== undefined && { id_vehicle: data.id_vehicle }),
       },
       select: bookingSelect,

@@ -24,7 +24,22 @@ export const bookingController = {
       return;
     }
 
+    const authUser = req.authUser!;
+    const isDriver = authUser.role === "driver" && booking.driver.id_driver === parseInt(authUser.sub);
+    const isMechanic = authUser.role === "mechanic" && booking.mechanic.id_mechanic === parseInt(authUser.sub);
+
+    if (!isDriver && !isMechanic) {
+      res.status(403).json({ message: "Access denied." });
+      return;
+    }
+
     res.status(200).json(booking);
+  },
+
+  async getMyBookings(req: Request, res: Response) {
+    const driverId = parseInt(req.authUser!.sub);
+    const bookings = await bookingService.findByDriverId(driverId);
+    res.status(200).json({ bookings });
   },
 
   async create(req: Request, res: Response) {
@@ -35,7 +50,8 @@ export const bookingController = {
       return;
     }
 
-    const booking = await bookingService.create(value);
+    const id_driver = parseInt(req.authUser!.sub);
+    const booking = await bookingService.create({ ...value, id_driver });
     res.status(201).json(booking);
   },
 
@@ -53,6 +69,11 @@ export const bookingController = {
     const existing = await bookingService.findById(params.id);
     if (!existing) {
       res.status(404).json({ message: "Booking not found." });
+      return;
+    }
+
+    if (existing.driver.id_driver !== parseInt(req.authUser!.sub)) {
+      res.status(403).json({ message: "Access denied." });
       return;
     }
 
@@ -83,6 +104,11 @@ export const bookingController = {
     const existing = await bookingService.findById(value.id);
     if (!existing) {
       res.status(404).json({ message: "Booking not found." });
+      return;
+    }
+
+    if (existing.driver.id_driver !== parseInt(req.authUser!.sub)) {
+      res.status(403).json({ message: "Access denied." });
       return;
     }
 
