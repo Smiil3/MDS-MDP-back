@@ -9,24 +9,35 @@ datasource db {
 }
 
 model booking {
-  id_booking        Int            @id @default(autoincrement())
-  appointment_date  DateTime       @db.DateTime(0)
-  total_amount      Decimal        @db.Decimal(15, 2)
-  created_at        DateTime       @default(now()) @db.DateTime(0)
-  updated_at        DateTime       @updatedAt @db.DateTime(0)
-  id_mechanic       Int
-  id_booking_status Int
-  id_driver         Int
-  id_vehicle        Int?
-  mechanic          mechanic       @relation(fields: [id_mechanic], references: [id_mechanic], onDelete: NoAction, onUpdate: NoAction, map: "booking_ibfk_1")
-  booking_status    booking_status @relation(fields: [id_booking_status], references: [id_booking_status], onDelete: NoAction, onUpdate: NoAction, map: "booking_ibfk_2")
-  driver            driver         @relation(fields: [id_driver], references: [id_driver], onDelete: NoAction, onUpdate: NoAction, map: "booking_ibfk_3")
-  vehicle           vehicle?       @relation(fields: [id_vehicle], references: [id_vehicle], onDelete: NoAction, onUpdate: NoAction, map: "booking_ibfk_4")
+  id_booking              Int                       @id @default(autoincrement())
+  appointment_date        DateTime                  @db.DateTime(0)
+  total_amount            Decimal                   @db.Decimal(15, 2)
+  created_at              DateTime                  @default(now()) @db.DateTime(0)
+  updated_at              DateTime                  @updatedAt @db.DateTime(0)
+  id_mechanic             Int
+  id_booking_status       Int
+  id_driver               Int
+  id_vehicle              Int?
+  mechanic                mechanic                  @relation(fields: [id_mechanic], references: [id_mechanic], onDelete: NoAction, onUpdate: NoAction, map: "booking_ibfk_1")
+  booking_status          booking_status            @relation(fields: [id_booking_status], references: [id_booking_status], onDelete: NoAction, onUpdate: NoAction, map: "booking_ibfk_2")
+  driver                  driver                    @relation(fields: [id_driver], references: [id_driver], onDelete: NoAction, onUpdate: NoAction, map: "booking_ibfk_3")
+  vehicle                 vehicle?                  @relation(fields: [id_vehicle], references: [id_vehicle], onDelete: NoAction, onUpdate: NoAction, map: "booking_ibfk_4")
+  booking_garage_service  booking_garage_service[]
 
   @@index([id_booking_status], map: "id_booking_status")
   @@index([id_driver], map: "id_driver")
   @@index([id_mechanic], map: "id_mechanic")
   @@index([id_vehicle], map: "id_vehicle")
+}
+
+model booking_garage_service {
+  id_booking        Int
+  id_garage_service Int
+  booking           booking       @relation(fields: [id_booking], references: [id_booking], onDelete: Cascade, onUpdate: NoAction, map: "booking_garage_service_ibfk_1")
+  garage_service    garage_service @relation(fields: [id_garage_service], references: [id_garage_service], onDelete: NoAction, onUpdate: NoAction, map: "booking_garage_service_ibfk_2")
+
+  @@id([id_booking, id_garage_service])
+  @@index([id_garage_service], map: "id_garage_service")
 }
 
 model booking_status {
@@ -44,9 +55,9 @@ model driver {
   phone           String       @db.VarChar(50)
   image_url       String?      @db.VarChar(255)
   birth_date      DateTime     @db.Date
-  id_subscription Int
+  id_subscription Int?
   booking         booking[]
-  subscription    subscription @relation(fields: [id_subscription], references: [id_subscription], onDelete: NoAction, onUpdate: NoAction, map: "driver_ibfk_1")
+  subscription    subscription? @relation(fields: [id_subscription], references: [id_subscription], onDelete: NoAction, onUpdate: NoAction, map: "driver_ibfk_1")
   review          review[]
   vehicle         vehicle[]
 
@@ -54,13 +65,14 @@ model driver {
 }
 
 model garage_service {
-  id_garage_service Int       @id @default(autoincrement())
-  category          String    @db.VarChar(100)
-  label             String    @db.VarChar(50)
-  price             Decimal   @db.Decimal(15, 2)
-  description       String    @db.Text
-  id_mechanic       Int?
-  mechanic          mechanic? @relation(fields: [id_mechanic], references: [id_mechanic], onDelete: NoAction, onUpdate: NoAction, map: "garage_service_ibfk_1")
+  id_garage_service      Int                      @id @default(autoincrement())
+  category               String                   @db.VarChar(100)
+  label                  String                   @db.VarChar(50)
+  price                  Decimal                  @db.Decimal(15, 2)
+  description            String                   @db.Text
+  id_mechanic            Int?
+  mechanic               mechanic?                @relation(fields: [id_mechanic], references: [id_mechanic], onDelete: NoAction, onUpdate: NoAction, map: "garage_service_ibfk_1")
+  booking_garage_service booking_garage_service[]
 
   @@index([id_mechanic], map: "id_mechanic")
 }
