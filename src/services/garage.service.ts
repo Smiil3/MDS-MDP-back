@@ -134,8 +134,23 @@ const buildSearchWhere = (search: string | undefined): Prisma.mechanicWhereInput
   };
 };
 
-export type BookedSlotDto = {
-  appointmentDate: string;
+export type AvailableSlotDto = {
+  startTime: string;
+  endTime: string;
+};
+
+const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
+type DayKey = (typeof DAY_KEYS)[number];
+
+type OpeningHourSlot = { open: string; close: string };
+type OpeningHours = Record<DayKey, OpeningHourSlot[]>;
+
+const toHHMM = (totalMinutes: number): string => {
+  const h = Math.floor(totalMinutes / 60)
+    .toString()
+    .padStart(2, "0");
+  const m = (totalMinutes % 60).toString().padStart(2, "0");
+  return `${h}:${m}`;
 };
 
 export const garageService = {
@@ -214,7 +229,24 @@ export const garageService = {
     );
   },
 
-  async findBookedSlots(garageId: number, date: string): Promise<BookedSlotDto[]> {
+  async findAvailableSlots(garageId: number, date: string): Promise<AvailableSlotDto[]> {
+    const mechanic = await prisma.mechanic.findUnique({
+      where: { id_mechanic: garageId },
+      select: { opening_hours: true },
+    });
+
+    if (!mechanic?.opening_hours) {
+      return [];
+    }
+
+    const openingHours = mechanic.opening_hours as unknown as OpeningHours;
+    const dayKey = DAY_KEYS[new Date(`${date}T00:00:00.000Z`).getUTCDay()];
+    const daySlots = openingHours[dayKey];
+
+    if (!daySlots || daySlots.length === 0) {
+      return [];
+    }
+
     const dayStart = new Date(`${date}T00:00:00.000Z`);
     const dayEnd = new Date(`${date}T23:59:59.999Z`);
 
@@ -229,14 +261,29 @@ export const garageService = {
       select: {
         appointment_date: true,
       },
-      orderBy: {
-        appointment_date: "asc",
-      },
     });
 
-    return bookings.map((booking) => ({
-      appointmentDate: booking.appointment_date.toISOString(),
-    }));
+    const bookedTimes = new Set(
+      bookings.map((b) => toHHMM(b.appointment_date.getUTCHours() * 60 + b.appointment_date.getUTCMinutes())),
+    );
+
+    const availableSlots: AvailableSlotDto[] = [];
+
+    for (const slot of daySlots) {
+      const [openHour, openMin] = slot.open.split(":").map(Number);
+      const [closeHour, closeMin] = slot.close.split(":").map(Number);
+      const openMinutes = openHour * 60 + openMin;
+      const closeMinutes = closeHour * 60 + closeMin;
+
+      for (let start = openMinutes; start + 60 <= closeMinutes; start += 60) {
+        const startStr = toHHMM(start);
+        if (!bookedTimes.has(startStr)) {
+          availableSlots.push({ startTime: startStr, endTime: toHHMM(start + 60) });
+        }
+      }
+    }
+
+    return availableSlots;
   },
 
   async findById(garageId: number): Promise<GarageDetailsDto | null> {
