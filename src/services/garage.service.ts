@@ -16,6 +16,7 @@ export type GarageCardDto = {
 };
 
 export type GarageServiceDto = {
+  id: number;
   serviceName: string;
   price: number;
 };
@@ -40,6 +41,7 @@ type MechanicProjection = {
 
 type MechanicDetailsProjection = MechanicProjection & {
   garage_service: {
+    id_garage_service: number;
     category: string;
     label: string;
     price: Prisma.Decimal;
@@ -96,6 +98,7 @@ const toCategorizedServices = (
       accumulator[category] = [];
     }
     accumulator[category].push({
+      id: service.id_garage_service,
       serviceName: service.label,
       price: Number(service.price),
     });
@@ -303,6 +306,7 @@ export const garageService = {
         longitude: true,
         garage_service: {
           select: {
+            id_garage_service: true,
             category: true,
             label: true,
             price: true,
