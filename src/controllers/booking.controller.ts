@@ -52,7 +52,7 @@ export const bookingController = {
 
     const id_driver = parseInt(req.authUser!.sub);
     const booking = await bookingService.create({ ...value, id_driver });
-    res.status(201).json(booking);
+    res.status(201).json({ booking });
   },
 
   async update(req: Request<IdParam>, res: Response) {
