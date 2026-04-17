@@ -51,7 +51,7 @@ export const garageController = {
       return;
     }
 
-    const bookedSlots = await garageService.findBookedSlots(paramValue.id, queryValue.date);
-    res.status(200).json({ bookedSlots });
+    const slots = await garageService.findAvailableSlots(paramValue.id, queryValue.date);
+    res.status(200).json({ slots });
   },
 };
