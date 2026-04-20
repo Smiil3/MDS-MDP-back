@@ -159,7 +159,13 @@ export const mechanicController = {
       return;
     }
 
-    const reviews = await mechanicService.findReviews(value.id);
-    res.status(200).json(reviews);
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.max(1, parseInt(req.query.limit as string) || 5);
+    const skip = (page - 1) * limit;
+
+    const { reviews, total, average } = await mechanicService.findReviews(value.id, skip, limit);
+    const totalPages = Math.ceil(total / limit);
+
+    res.status(200).json({ reviews, total, average, page, totalPages });
   },
 };
