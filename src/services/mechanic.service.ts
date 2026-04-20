@@ -147,19 +147,34 @@ export const mechanicService = {
     });
   },
 
-  findReviews(id: number) {
-    return prisma.review.findMany({
-      where: { id_mechanic: id },
-      orderBy: { date: "desc" },
-      include: {
-        driver: {
-          select: {
-            id_driver: true,
-            last_name: true,
-            first_name: true,
+  async findReviews(id: number, skip: number, take: number) {
+    const [reviews, total, aggregate] = await prisma.$transaction([
+      prisma.review.findMany({
+        where: { id_mechanic: id },
+        orderBy: { date: "desc" },
+        skip,
+        take,
+        select: {
+          id_review: true,
+          rating: true,
+          description: true,
+          date: true,
+          driver: {
+            select: {
+              id_driver: true,
+              last_name: true,
+              first_name: true,
+            },
           },
         },
-      },
-    });
+      }),
+      prisma.review.count({ where: { id_mechanic: id } }),
+      prisma.review.aggregate({
+        where: { id_mechanic: id },
+        _avg: { rating: true },
+      }),
+    ]);
+
+    return { reviews, total, average: aggregate._avg.rating };
   },
 };
