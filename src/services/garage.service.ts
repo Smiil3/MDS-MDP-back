@@ -13,6 +13,8 @@ export type GarageCardDto = {
   openingHours: Prisma.JsonValue | null;
   description: string | null;
   distanceMeters: number | null;
+  averageRating: number | null;
+  services: GarageServicesDto;
 };
 
 export type GarageServiceDto = {
@@ -37,9 +39,6 @@ type MechanicProjection = {
   description: string | null;
   latitude: number | null;
   longitude: number | null;
-};
-
-type MechanicDetailsProjection = MechanicProjection & {
   garage_service: {
     id_garage_service: number;
     category: string;
@@ -47,6 +46,8 @@ type MechanicDetailsProjection = MechanicProjection & {
     price: Prisma.Decimal;
   }[];
 };
+
+type MechanicDetailsProjection = MechanicProjection;
 
 const EARTH_RADIUS_METERS = 6_371_000;
 
@@ -76,6 +77,7 @@ const computeDistanceMeters = (
 const toGarageCardDto = (
   mechanic: MechanicProjection,
   distanceMeters: number | null,
+  averageRating: number | null,
 ): GarageCardDto => ({
   id: mechanic.id_mechanic,
   name: mechanic.name,
@@ -87,6 +89,8 @@ const toGarageCardDto = (
   openingHours: mechanic.opening_hours,
   description: mechanic.description,
   distanceMeters,
+  averageRating,
+  services: toCategorizedServices(mechanic.garage_service),
 });
 
 const toCategorizedServices = (
@@ -110,7 +114,10 @@ const toCategorizedServices = (
   }));
 };
 
-const toGarageDetailsDto = (mechanic: MechanicDetailsProjection): GarageDetailsDto => ({
+const toGarageDetailsDto = (
+  mechanic: MechanicDetailsProjection,
+  averageRating: number | null,
+): GarageDetailsDto => ({
   id: mechanic.id_mechanic,
   name: mechanic.name,
   city: mechanic.city,
@@ -120,6 +127,7 @@ const toGarageDetailsDto = (mechanic: MechanicDetailsProjection): GarageDetailsD
   imageUrl: mechanic.image_url,
   openingHours: mechanic.opening_hours,
   description: mechanic.description,
+  averageRating,
   services: toCategorizedServices(mechanic.garage_service),
 });
 
@@ -162,12 +170,24 @@ export const garageService = {
     const where = buildSearchWhere(query.search);
     const hasCoords = typeof query.lat === "number" && typeof query.lng === "number";
 
+    const garageServiceSelect = {
+      id_garage_service: true,
+      category: true,
+      label: true,
+      price: true,
+    };
+
+    const garageServiceOrderBy = [
+      { category: "asc" as const },
+      { id_garage_service: "asc" as const },
+    ];
+
+    let mechanicsWithDistance: { mechanic: MechanicProjection; distanceMeters: number | null }[];
+
     if (!hasCoords) {
       const mechanics = await prisma.mechanic.findMany({
         where,
-        orderBy: {
-          name: "asc",
-        },
+        orderBy: { name: "asc" },
         take: limit,
         select: {
           id_mechanic: true,
@@ -179,56 +199,74 @@ export const garageService = {
           description: true,
           latitude: true,
           longitude: true,
+          garage_service: { select: garageServiceSelect, orderBy: garageServiceOrderBy },
         },
       });
 
-      return mechanics.map((mechanic) => toGarageCardDto(mechanic, null));
+      mechanicsWithDistance = mechanics.map((mechanic) => ({ mechanic, distanceMeters: null }));
+    } else {
+      const lat = query.lat as number;
+      const lng = query.lng as number;
+
+      const mechanics = await prisma.mechanic.findMany({
+        where: {
+          AND: [where, { latitude: { not: null } }, { longitude: { not: null } }],
+        },
+        select: {
+          id_mechanic: true,
+          name: true,
+          city: true,
+          address: true,
+          image_url: true,
+          opening_hours: true,
+          description: true,
+          latitude: true,
+          longitude: true,
+          garage_service: { select: garageServiceSelect, orderBy: garageServiceOrderBy },
+        },
+      });
+
+      mechanicsWithDistance = mechanics
+        .flatMap((mechanic) => {
+          if (typeof mechanic.latitude !== "number" || typeof mechanic.longitude !== "number") {
+            return [];
+          }
+          return [
+            {
+              mechanic,
+              distanceMeters: computeDistanceMeters(lat, lng, mechanic.latitude, mechanic.longitude),
+            },
+          ];
+        })
+        .sort((a, b) => (a.distanceMeters as number) - (b.distanceMeters as number))
+        .slice(0, limit)
+        .map(({ mechanic, distanceMeters }) => ({
+          mechanic,
+          distanceMeters: Math.round(distanceMeters as number),
+        }));
     }
 
-    const lat = query.lat;
-    const lng = query.lng;
-
-    if (typeof lat !== "number" || typeof lng !== "number") {
+    if (mechanicsWithDistance.length === 0) {
       return [];
     }
 
-    const mechanics = await prisma.mechanic.findMany({
-      where: {
-        AND: [where, { latitude: { not: null } }, { longitude: { not: null } }],
-      },
-      select: {
-        id_mechanic: true,
-        name: true,
-        city: true,
-        address: true,
-        image_url: true,
-        opening_hours: true,
-        description: true,
-        latitude: true,
-        longitude: true,
-      },
+    const mechanicIds = mechanicsWithDistance.map(({ mechanic }) => mechanic.id_mechanic);
+    const ratingAggregates = await prisma.review.groupBy({
+      by: ["id_mechanic"],
+      where: { id_mechanic: { in: mechanicIds } },
+      _avg: { rating: true },
     });
 
-    const withDistance = mechanics
-      .flatMap((mechanic) => {
-        if (typeof mechanic.latitude !== "number" || typeof mechanic.longitude !== "number") {
-          return [];
-        }
+    const ratingByMechanicId = new Map(
+      ratingAggregates.map((r) => [r.id_mechanic, r._avg.rating]),
+    );
 
-        const distanceMeters = computeDistanceMeters(
-          lat,
-          lng,
-          mechanic.latitude,
-          mechanic.longitude,
-        );
-
-        return [{ mechanic, distanceMeters }];
-      })
-      .sort((a, b) => a.distanceMeters - b.distanceMeters)
-      .slice(0, limit);
-
-    return withDistance.map(({ mechanic, distanceMeters }) =>
-      toGarageCardDto(mechanic, Math.round(distanceMeters)),
+    return mechanicsWithDistance.map(({ mechanic, distanceMeters }) =>
+      toGarageCardDto(
+        mechanic,
+        distanceMeters,
+        ratingByMechanicId.get(mechanic.id_mechanic) ?? null,
+      ),
     );
   },
 
@@ -320,6 +358,11 @@ export const garageService = {
       return null;
     }
 
-    return toGarageDetailsDto(mechanic);
+    const aggregate = await prisma.review.aggregate({
+      where: { id_mechanic: garageId },
+      _avg: { rating: true },
+    });
+
+    return toGarageDetailsDto(mechanic, aggregate._avg.rating);
   },
 };
