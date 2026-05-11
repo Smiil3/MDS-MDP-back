@@ -135,6 +135,7 @@ model mechanic {
   password       String           @db.VarChar(100)
   address        String           @db.VarChar(150)
   zip_code       Int
+  city           String           @db.VarChar(100)
   phone          String?          @db.VarChar(50)
   description    String?          @db.Text
   image_url      String?          @db.VarChar(255)
