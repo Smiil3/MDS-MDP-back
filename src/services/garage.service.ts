@@ -5,7 +5,7 @@ import { NearbyGaragesQuery } from "../validators/garage.validator";
 export type GarageCardDto = {
   id: number;
   name: string;
-  city: string;
+  city: string | null;
   address: string;
   latitude: number | null;
   longitude: number | null;
@@ -27,12 +27,14 @@ export type GarageServicesDto = Record<string, GarageServiceDto[]>[];
 
 export type GarageDetailsDto = Omit<GarageCardDto, "distanceMeters"> & {
   services: GarageServicesDto;
+  phone: string | null;
+  email: string;
 };
 
 type MechanicProjection = {
   id_mechanic: number;
   name: string;
-  city: string;
+  city: string | null;
   address: string;
   image_url: string | null;
   opening_hours: Prisma.JsonValue | null;
@@ -47,7 +49,10 @@ type MechanicProjection = {
   }[];
 };
 
-type MechanicDetailsProjection = MechanicProjection;
+type MechanicDetailsProjection = MechanicProjection & {
+  phone: string | null;
+  email: string;
+};
 
 const EARTH_RADIUS_METERS = 6_371_000;
 
@@ -128,6 +133,8 @@ const toGarageDetailsDto = (
   openingHours: mechanic.opening_hours,
   description: mechanic.description,
   averageRating,
+  phone: mechanic.phone,
+  email: mechanic.email,
   services: toCategorizedServices(mechanic.garage_service),
 });
 
@@ -342,6 +349,8 @@ export const garageService = {
         description: true,
         latitude: true,
         longitude: true,
+        phone: true,
+        email: true,
         garage_service: {
           select: {
             id_garage_service: true,
