@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: backend-api
-          image: ghcr.io/Smiil3/mds-mdp-back:latest
+          image: ghcr.io/smiil3/mds-mdp-back:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 3000
