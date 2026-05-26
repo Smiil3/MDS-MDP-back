@@ -149,11 +149,15 @@ describe("mechanic routes (component)", () => {
 
   it("GET /api/mechanics/:id/reviews returns 200 on success", async () => {
     mechanicServiceMock.findById.mockResolvedValue({ id_mechanic: 1 } as never);
-    mechanicServiceMock.findReviews.mockResolvedValue([{ id_review: 4 } as never]);
+    mechanicServiceMock.findReviews.mockResolvedValue({
+      reviews: [{ id_review: 4 }],
+      total: 1,
+      average: 5,
+    } as never);
 
     const response = await request(app).get("/api/mechanics/1/reviews");
 
     expect(response.status).toBe(200);
-    expect(response.body).toEqual([{ id_review: 4 }]);
+    expect(response.body).toEqual({ reviews: [{ id_review: 4 }], total: 1, average: 5, page: 1, totalPages: 1 });
   });
 });

@@ -8,6 +8,10 @@ jest.mock("../../src/prisma/client", () => ({
       findMany: jest.fn(),
       findUnique: jest.fn(),
     },
+    review: {
+      groupBy: jest.fn(),
+      aggregate: jest.fn(),
+    },
   },
 }));
 
@@ -15,6 +19,10 @@ const prismaMock = prisma as unknown as {
   mechanic: {
     findMany: jest.Mock;
     findUnique: jest.Mock;
+  };
+  review: {
+    groupBy: jest.Mock;
+    aggregate: jest.Mock;
   };
 };
 
@@ -40,8 +48,10 @@ describe("garage.service", () => {
         description: "Garage A",
         latitude: null,
         longitude: null,
+        garage_service: [],
       },
     ]);
+    prismaMock.review.groupBy.mockResolvedValue([]);
 
     const result = await garageService.findNearby({ search: "Lyon", limit: 5 });
 
@@ -63,6 +73,8 @@ describe("garage.service", () => {
         openingHours: weekdayOpeningHours,
         description: "Garage A",
         distanceMeters: null,
+        averageRating: null,
+        services: [],
       },
     ]);
   });
@@ -79,6 +91,7 @@ describe("garage.service", () => {
         description: "Far",
         latitude: 48.9566,
         longitude: 2.4522,
+        garage_service: [],
       },
       {
         id_mechanic: 3,
@@ -90,8 +103,10 @@ describe("garage.service", () => {
         description: "Near",
         latitude: 48.857,
         longitude: 2.3523,
+        garage_service: [],
       },
     ]);
+    prismaMock.review.groupBy.mockResolvedValue([]);
 
     const result = await garageService.findNearby({
       lat: 48.8566,
@@ -137,6 +152,8 @@ describe("garage.service", () => {
       ],
     });
 
+    prismaMock.review.aggregate.mockResolvedValue({ _avg: { rating: null } });
+
     const result = await garageService.findById(7);
 
     expect(prismaMock.mechanic.findUnique).toHaveBeenCalledWith(
@@ -154,6 +171,7 @@ describe("garage.service", () => {
       imageUrl: "https://img/details.jpg",
       openingHours: weekdayOpeningHours,
       description: "Garage detail description",
+      averageRating: null,
       services: [
         {
           vidange: [
