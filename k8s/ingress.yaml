@@ -3,9 +3,17 @@ kind: Ingress
 metadata:
   name: backend-api
   namespace: backend
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - vps114748.serveur-vps.net
+      secretName: backend-tls
   rules:
-    - http:
+    - host: vps114748.serveur-vps.net
+      http:
         paths:
           - path: /api
             pathType: Prefix
