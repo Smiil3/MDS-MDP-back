@@ -67,6 +67,7 @@ jobs:
 
             kubectl create namespace ${{ env.K8S_NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
 
+            kubectl apply -f /root/backend-api/k8s/mysql.yaml
             kubectl apply -f /root/backend-api/k8s/deployment.yaml
             kubectl apply -f /root/backend-api/k8s/service.yaml
             kubectl apply -f /root/backend-api/k8s/ingress.yaml
