@@ -5,8 +5,7 @@ metadata:
   namespace: backend
 spec:
   rules:
-    - host: 192.162.68.34
-      http:
+    - http:
         paths:
           - path: /
             pathType: Prefix
