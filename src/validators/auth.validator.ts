@@ -91,7 +91,7 @@ const mechanicServicesSchema = Joi.array()
   .min(1)
   .required();
 
-export const driverRegisterSchema = Joi.object<DriverRegisterInput>({
+export const driverRegisterSchema = Joi.object({
   last_name: Joi.string().required(),
   first_name: Joi.string().required(),
   email: Joi.string().email().required(),
@@ -101,12 +101,12 @@ export const driverRegisterSchema = Joi.object<DriverRegisterInput>({
   id_subscription: Joi.number().integer().positive().optional(),
 }).required();
 
-export const driverLoginSchema = Joi.object<DriverLoginInput>({
+export const driverLoginSchema = Joi.object({
   email: Joi.string().email().required(),
   password: Joi.string().required(),
 }).required();
 
-export const mechanicRegisterSchema = Joi.object<MechanicRegisterInput>({
+export const mechanicRegisterSchema = Joi.object({
   name: Joi.string().required(),
   email: Joi.string().email().required(),
   password: Joi.string().required(),
@@ -120,14 +120,14 @@ export const mechanicRegisterSchema = Joi.object<MechanicRegisterInput>({
   siret: Joi.string().pattern(/^\d{14}$/).required(),
 }).required();
 
-export const mechanicLoginSchema = Joi.object<MechanicLoginInput>({
+export const mechanicLoginSchema = Joi.object({
   email: Joi.string().email().required(),
   password: Joi.string().required(),
 }).required();
 
-export const refreshTokenSchema = Joi.object<RefreshTokenInput>({
+export const refreshTokenSchema = Joi.object({
   refreshToken: Joi.string().required(),
 }).required();
 
-export const validatePayload = <T>(schema: Joi.ObjectSchema<T>, payload: unknown) =>
-  validatePayloadBase(schema, payload, { stripUnknown: true });
+export const validatePayload = (schema: Joi.ObjectSchema, payload: unknown) =>
+  validatePayloadBase(schema, payload);

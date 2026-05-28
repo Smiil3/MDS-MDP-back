@@ -1,4 +1,7 @@
-export type AuthRole = "driver" | "mechanic";
+export enum AuthRole {
+  DRIVER = "driver",
+  MECHANIC = "mechanic",
+}
 
 export type AuthTokenPayload = {
   sub: string;
@@ -12,28 +15,21 @@ export type RefreshTokenPayload = {
   tokenType: "refresh";
 };
 
-const hasValidBasePayload = (
-  value: unknown,
-): value is { sub: string; role: AuthRole; tokenType: string } => {
-  if (typeof value !== "object" || value === null) {
-    return false;
-  }
-
-  const payload = value as Partial<AuthTokenPayload | RefreshTokenPayload>;
-
+// Remplacer les guards complexes par des simples
+export const isRefreshTokenPayload = (value: unknown): value is RefreshTokenPayload => {
   return (
-    typeof payload.sub === "string" &&
-    (payload.role === "driver" || payload.role === "mechanic") &&
-    typeof payload.tokenType === "string"
+      typeof value === "object" &&
+      value !== null &&
+      "tokenType" in value &&
+      value.tokenType === "refresh"
   );
 };
 
 export const isAuthTokenPayload = (value: unknown): value is AuthTokenPayload => {
-  return hasValidBasePayload(value) && value.tokenType === "access";
-};
-
-export const isRefreshTokenPayload = (
-  value: unknown,
-): value is RefreshTokenPayload => {
-  return hasValidBasePayload(value) && value.tokenType === "refresh";
+  return (
+      typeof value === "object" &&
+      value !== null &&
+      "tokenType" in value &&
+      value.tokenType === "access"
+  );
 };

@@ -17,11 +17,11 @@ export type CreateMechanicInput = {
 
 export type UpdateMechanicInput = Partial<CreateMechanicInput>;
 
-export const mechanicIdParamSchema = Joi.object<MechanicIdParamInput>({
+export const mechanicIdParamSchema = Joi.object({
   id: Joi.number().integer().required(),
 }).required();
 
-export const createMechanicSchema = Joi.object<CreateMechanicInput>({
+export const createMechanicSchema = Joi.object({
   name: Joi.string().trim().required(),
   email: Joi.string().email().required(),
   password: Joi.string().trim().required(),
@@ -32,7 +32,7 @@ export const createMechanicSchema = Joi.object<CreateMechanicInput>({
   description: Joi.string().allow("").optional(),
 }).required();
 
-export const updateMechanicSchema = Joi.object<UpdateMechanicInput>({
+export const updateMechanicSchema = Joi.object({
   name: Joi.string().allow("").optional(),
   email: Joi.string().email().allow("").optional(),
   password: Joi.string().allow("").optional(),

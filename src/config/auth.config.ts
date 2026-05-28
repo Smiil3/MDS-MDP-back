@@ -13,7 +13,7 @@ export const getJwtSecret = () => {
 export const getJwtExpiresIn = (): SignOptions["expiresIn"] => {
   const expiresIn = process.env.JWT_EXPIRES_IN;
 
-  return expiresIn ? (expiresIn as SignOptions["expiresIn"]) : "1h";
+  return expiresIn ? (expiresIn as SignOptions["expiresIn"]) : "3h";
 };
 
 export const getJwtRefreshSecret = () => {
@@ -25,3 +25,8 @@ export const getJwtRefreshExpiresIn = (): SignOptions["expiresIn"] => {
 
   return expiresIn ? (expiresIn as SignOptions["expiresIn"]) : "7d";
 };
+
+export const getDefaultSubscriptionId =(): Number => {
+  const defaultSubscriptionId = Number(process.env.JWT_DEFAULT_SUBSCRIPTION);
+  return defaultSubscriptionId || 1;
+}

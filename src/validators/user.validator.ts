@@ -11,7 +11,7 @@ export type CreateUserInput = {
   id_subscription: number;
 };
 
-export const createUserSchema = Joi.object<CreateUserInput>({
+export const createUserSchema = Joi.object({
   last_name: Joi.string().trim().required(),
   first_name: Joi.string().trim().required(),
   email: Joi.string().email().required(),
@@ -30,7 +30,7 @@ export type UpdateDriverProfileInput = {
   birth_date?: string;
 };
 
-export const updateDriverProfileSchema = Joi.object<UpdateDriverProfileInput>({
+export const updateDriverProfileSchema = Joi.object({
   first_name: Joi.string().trim().optional(),
   last_name: Joi.string().trim().optional(),
   phone: Joi.string().trim().optional(),
@@ -51,7 +51,7 @@ export type CreateVehicleInput = {
   fuel_type?: string;
 };
 
-export const createVehicleSchema = Joi.object<CreateVehicleInput>({
+export const createVehicleSchema = Joi.object({
   brand: Joi.string().trim().required(),
   model: Joi.string().trim().required(),
   year: Joi.number().integer().min(1900).max(2100).required(),
@@ -61,5 +61,5 @@ export const createVehicleSchema = Joi.object<CreateVehicleInput>({
   fuel_type: Joi.string().trim().allow("").optional(),
 }).required();
 
-export const validatePayload = <T>(schema: Joi.ObjectSchema<T>, payload: unknown) =>
-  validatePayloadBase(schema, payload, { stripUnknown: true });
+export const validatePayload = (schema: Joi.ObjectSchema, payload: unknown) =>
+  validatePayloadBase(schema, payload);

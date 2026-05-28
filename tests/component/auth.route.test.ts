@@ -1,8 +1,8 @@
-import jwt from "jsonwebtoken";
 import request from "supertest";
-import { app } from "../../src/app";
-import { GeocodingError } from "../../src/services/geocoding.service";
-import { authService } from "../../src/services/auth.service";
+import {app} from "../../src/app";
+import {GeocodingError} from "../../src/services/geocoding.service";
+import {authService} from "../../src/services/auth.service";
+import {AuthRole} from "../../src/types/auth";
 
 jest.mock("../../src/services/auth.service", () => ({
   authService: {
@@ -37,7 +37,7 @@ describe("auth routes (component)", () => {
     authServiceMock.registerDriver.mockResolvedValue({
       accessToken: "driver-access-token",
       refreshToken: "driver-refresh-token",
-      user: { id: 1, role: "driver", email: "john@test.dev" },
+      user: { id: 1, role: AuthRole.DRIVER, email: "john@test.dev" },
     });
 
     const response = await request(app).post("/api/auth/drivers/register").send({
@@ -54,7 +54,7 @@ describe("auth routes (component)", () => {
     expect(response.body).toEqual({
       accessToken: "driver-access-token",
       refreshToken: "driver-refresh-token",
-      user: { id: 1, role: "driver", email: "john@test.dev" },
+      user: { id: 1, role: AuthRole.DRIVER, email: "john@test.dev" },
     });
   });
 
@@ -77,7 +77,7 @@ describe("auth routes (component)", () => {
     authServiceMock.registerMechanic.mockResolvedValue({
       accessToken: "mechanic-access-token",
       refreshToken: "mechanic-refresh-token",
-      user: { id: 3, role: "mechanic", email: "garage@test.dev" },
+      user: { id: 3, role: AuthRole.MECHANIC, email: "garage@test.dev" },
     });
 
     const response = await request(app).post("/api/auth/mechanics/register").send({
@@ -111,7 +111,7 @@ describe("auth routes (component)", () => {
     expect(response.body).toEqual({
       accessToken: "mechanic-access-token",
       refreshToken: "mechanic-refresh-token",
-      user: { id: 3, role: "mechanic", email: "garage@test.dev" },
+      user: { id: 3, role: AuthRole.MECHANIC, email: "garage@test.dev" },
     });
   });
 
@@ -178,7 +178,7 @@ describe("auth routes (component)", () => {
     authServiceMock.refreshToken.mockResolvedValue({
       accessToken: "new-access-token",
       refreshToken: "new-refresh-token",
-      user: { id: 3, role: "mechanic", email: "garage@test.dev" },
+      user: { id: 3, role: AuthRole.MECHANIC, email: "garage@test.dev" },
     });
 
     const response = await request(app).post("/api/auth/refresh").send({
@@ -189,50 +189,7 @@ describe("auth routes (component)", () => {
     expect(response.body).toEqual({
       accessToken: "new-access-token",
       refreshToken: "new-refresh-token",
-      user: { id: 3, role: "mechanic", email: "garage@test.dev" },
+      user: { id: 3, role: AuthRole.MECHANIC, email: "garage@test.dev" },
     });
-  });
-
-  it("GET /api/auth/drivers/me returns 401 without token", async () => {
-    const response = await request(app).get("/api/auth/drivers/me");
-    expect(response.status).toBe(401);
-  });
-
-  it("GET /api/auth/drivers/me returns 403 for wrong role", async () => {
-    const token = jwt.sign({ sub: "8", role: "mechanic", tokenType: "access" }, secret, {
-      expiresIn: "1h",
-    });
-
-    const response = await request(app)
-      .get("/api/auth/drivers/me")
-      .set("Authorization", `Bearer ${token}`);
-
-    expect(response.status).toBe(403);
-  });
-
-  it("GET /api/auth/drivers/me returns 200 for driver token", async () => {
-    const token = jwt.sign({ sub: "9", role: "driver", tokenType: "access" }, secret, {
-      expiresIn: "1h",
-    });
-
-    const response = await request(app)
-      .get("/api/auth/drivers/me")
-      .set("Authorization", `Bearer ${token}`);
-
-    expect(response.status).toBe(200);
-    expect(response.body.user).toMatchObject({ sub: "9", role: "driver" });
-  });
-
-  it("GET /api/auth/mechanics/me returns 200 for mechanic token", async () => {
-    const token = jwt.sign({ sub: "11", role: "mechanic", tokenType: "access" }, secret, {
-      expiresIn: "1h",
-    });
-
-    const response = await request(app)
-      .get("/api/auth/mechanics/me")
-      .set("Authorization", `Bearer ${token}`);
-
-    expect(response.status).toBe(200);
-    expect(response.body.user).toMatchObject({ sub: "11", role: "mechanic" });
   });
 });

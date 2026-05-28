@@ -1,23 +1,17 @@
 import { type Request, type Response } from "express";
 import { authService, MissingSubscriptionError } from "../services/auth.service";
 import { GeocodingError } from "../services/geocoding.service";
-import {
-  driverLoginSchema,
-  driverRegisterSchema,
-  mechanicLoginSchema,
-  mechanicRegisterSchema,
-  refreshTokenSchema,
-  validatePayload,
+import type {
+  DriverLoginInput,
+  DriverRegisterInput,
+  MechanicLoginInput,
+  MechanicRegisterInput,
+  RefreshTokenInput,
 } from "../validators/auth.validator";
 
-export const authController = {
-  async registerDriver(req: Request, res: Response) {
-    const { errors, value } = validatePayload(driverRegisterSchema, req.body);
-
-    if (errors || !value) {
-      res.status(400).json({ message: "Invalid payload.", errors });
-      return;
-    }
+export class AuthController {
+  registerDriver = async (req: Request, res: Response) => {
+    const value = req.body as DriverRegisterInput;
 
     let result;
     try {
@@ -27,6 +21,7 @@ export const authController = {
         res.status(400).json({ message: error.message });
         return;
       }
+
       throw error;
     }
 
@@ -36,15 +31,10 @@ export const authController = {
     }
 
     res.status(201).json(result);
-  },
+  };
 
-  async loginDriver(req: Request, res: Response) {
-    const { errors, value } = validatePayload(driverLoginSchema, req.body);
-
-    if (errors || !value) {
-      res.status(400).json({ message: "Invalid payload.", errors });
-      return;
-    }
+  loginDriver = async (req: Request, res: Response) => {
+    const value = req.body as DriverLoginInput;
 
     const result = await authService.loginDriver(value);
 
@@ -54,15 +44,10 @@ export const authController = {
     }
 
     res.status(200).json(result);
-  },
+  };
 
-  async registerMechanic(req: Request, res: Response) {
-    const { errors, value } = validatePayload(mechanicRegisterSchema, req.body);
-
-    if (errors || !value) {
-      res.status(400).json({ message: "Invalid payload.", errors });
-      return;
-    }
+  registerMechanic = async (req: Request, res: Response) => {
+    const value = req.body as MechanicRegisterInput;
 
     let result;
     try {
@@ -82,15 +67,10 @@ export const authController = {
     }
 
     res.status(201).json(result);
-  },
+  };
 
-  async loginMechanic(req: Request, res: Response) {
-    const { errors, value } = validatePayload(mechanicLoginSchema, req.body);
-
-    if (errors || !value) {
-      res.status(400).json({ message: "Invalid payload.", errors });
-      return;
-    }
+  loginMechanic = async (req: Request, res: Response) => {
+    const value = req.body as MechanicLoginInput;
 
     const result = await authService.loginMechanic(value);
 
@@ -100,15 +80,10 @@ export const authController = {
     }
 
     res.status(200).json(result);
-  },
+  };
 
-  async refresh(req: Request, res: Response) {
-    const { errors, value } = validatePayload(refreshTokenSchema, req.body);
-
-    if (errors || !value) {
-      res.status(400).json({ message: "Invalid payload.", errors });
-      return;
-    }
+  refresh = async (req: Request, res: Response) => {
+    const value = req.body as RefreshTokenInput;
 
     const result = await authService.refreshToken(value.refreshToken);
 
@@ -118,13 +93,7 @@ export const authController = {
     }
 
     res.status(200).json(result);
-  },
+  };
+}
 
-  getDriverProfile(req: Request, res: Response) {
-    res.status(200).json({ user: req.authUser });
-  },
-
-  getMechanicProfile(req: Request, res: Response) {
-    res.status(200).json({ user: req.authUser });
-  },
-};
+export const authController = new AuthController();

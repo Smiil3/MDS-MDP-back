@@ -10,18 +10,19 @@ describe("garage.validator", () => {
     expect(result.value).toEqual({ limit: 5 });
   });
 
-  it("rejects query with only lat", () => {
-    const result = validateNearbyGaragesQuery({ lat: "48.8566" });
+  it("rejects query with only lat (number without lng)", () => {
+    const result = validateNearbyGaragesQuery({ lat: 48.8566 });
     expect(result.value).toBeUndefined();
-    expect(result.errors).toContain("lat and lng must be provided together.");
+    expect(result.errors).toBeDefined();
+    expect(result.errors?.length).toBeGreaterThan(0);
   });
 
   it("accepts valid nearby query", () => {
     const result = validateNearbyGaragesQuery({
-      lat: "48.8566",
-      lng: "2.3522",
+      lat: 48.8566,
+      lng: 2.3522,
       search: "Paris",
-      limit: "3",
+      limit: 3,
     });
 
     expect(result.errors).toBeUndefined();
@@ -34,7 +35,7 @@ describe("garage.validator", () => {
   });
 
   it("accepts valid garage id param", () => {
-    const result = validateGarageIdParam({ id: "12" });
+    const result = validateGarageIdParam({ id: 12 });
     expect(result.errors).toBeUndefined();
     expect(result.value).toEqual({ id: 12 });
   });

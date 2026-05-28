@@ -1,20 +1,10 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { Prisma } from "@prisma/client";
-import {
-  getJwtExpiresIn,
-  getJwtRefreshExpiresIn,
-  getJwtRefreshSecret,
-  getJwtSecret,
-} from "../config/auth.config";
-import { prisma } from "../prisma/client";
-import { geocodingService } from "./geocoding.service";
-import {
-  isRefreshTokenPayload,
-  type AuthRole,
-  type AuthTokenPayload,
-  type RefreshTokenPayload,
-} from "../types/auth";
+import {Prisma} from "@prisma/client";
+import {getJwtExpiresIn, getJwtRefreshExpiresIn, getJwtRefreshSecret, getJwtSecret,} from "../config/auth.config";
+import {AuthRepository, authRepository} from "../repositories/auth.repository";
+import {geocodingService} from "./geocoding.service";
+import {AuthRole, isRefreshTokenPayload, RefreshTokenPayload,} from "../types/auth";
 import type {
   DriverLoginInput,
   DriverRegisterInput,
@@ -34,248 +24,210 @@ type AuthResponse = {
 
 export class MissingSubscriptionError extends Error {}
 
-const createAccessToken = (payload: Omit<AuthTokenPayload, "tokenType">) =>
-  jwt.sign({ ...payload, tokenType: "access" }, getJwtSecret(), {
-    expiresIn: getJwtExpiresIn(),
-  });
+export class AuthService {
+  constructor(private readonly authRepository: AuthRepository) {}
 
-const createRefreshToken = (payload: Omit<RefreshTokenPayload, "tokenType">) =>
-  jwt.sign({ ...payload, tokenType: "refresh" }, getJwtRefreshSecret(), {
-    expiresIn: getJwtRefreshExpiresIn(),
-  });
-
-const verifyRefreshToken = (token: string) => {
-  try {
-    const decoded = jwt.verify(token, getJwtRefreshSecret());
-
-    if (!isRefreshTokenPayload(decoded)) {
-      return null;
-    }
-
-    return decoded;
-  } catch {
-    return null;
-  }
-};
-
-const hashPassword = (password: string) => bcrypt.hash(password, 10);
-
-const comparePassword = (password: string, hash: string) =>
-  bcrypt.compare(password, hash);
-
-const createAuthResponse = (user: { id: number; role: AuthRole; email: string }) => ({
-  accessToken: createAccessToken({ sub: String(user.id), role: user.role }),
-  refreshToken: createRefreshToken({ sub: String(user.id), role: user.role }),
-  user,
-});
-
-const parseUserId = (sub: string) => {
-  const userId = Number.parseInt(sub, 10);
-
-  return Number.isNaN(userId) ? null : userId;
-};
-
-const resolveDriverSubscriptionId = async (idSubscription?: number) => {
-  if (typeof idSubscription === "number") {
-    return idSubscription;
-  }
-
-  const defaultSubscription = await prisma.subscription.findFirst({
-    select: { id_subscription: true },
-    orderBy: { id_subscription: "asc" },
-  });
-
-  if (!defaultSubscription) {
-    throw new MissingSubscriptionError("No subscription is available for driver registration.");
-  }
-
-  return defaultSubscription.id_subscription;
-};
-
-const mapMechanicServices = (
-  idMechanic: number,
-  categories: MechanicRegisterInput["services"],
-) =>
-  categories.flatMap((categoryObject) =>
-    Object.entries(categoryObject).flatMap(([category, services]) =>
-      services.map((service) => ({
-        id_mechanic: idMechanic,
-        category,
-        label: service.serviceName,
-        price: service.price,
-        description: "",
-      })),
-    ),
-  );
-
-export const authService = {
   async registerDriver(input: DriverRegisterInput): Promise<AuthResponse | null> {
-    const existingDriver = await prisma.driver.findUnique({
-      where: { email: input.email },
-    });
+    const existingDriver = await this.authRepository.findDriverByEmail(input.email);
 
     if (existingDriver) {
       return null;
     }
 
-    const resolvedSubscriptionId = await resolveDriverSubscriptionId(input.id_subscription);
-    const passwordHash = await hashPassword(input.password);
-    const driver = await prisma.driver.create({
-      data: {
-        last_name: input.last_name,
-        first_name: input.first_name,
-        email: input.email,
-        password: passwordHash,
-        phone: input.phone,
-        birth_date: new Date(input.birth_date),
-        id_subscription: resolvedSubscriptionId,
-      },
+    const defaultSubscriptionId = 1;
+    const passwordHash = await this._hashPassword(input.password);
+    const driver = await this.authRepository.createDriver({
+      last_name: input.last_name,
+      first_name: input.first_name,
+      email: input.email,
+      password: passwordHash,
+      phone: input.phone,
+      birth_date: new Date(input.birth_date),
+      id_subscription: defaultSubscriptionId,
     });
 
-    return createAuthResponse({
+    return this._createAuthResponse({
       id: driver.id_driver,
-      role: "driver",
+      role: AuthRole.DRIVER,
       email: driver.email,
     });
-  },
+  }
 
   async loginDriver(input: DriverLoginInput): Promise<AuthResponse | null> {
-    const driver = await prisma.driver.findUnique({
-      where: { email: input.email },
-    });
+    const driver = await this.authRepository.findDriverByEmail(input.email);
 
     if (!driver) {
       return null;
     }
 
-    const isValidPassword = await comparePassword(input.password, driver.password);
+    const isValidPassword = await this._comparePassword(input.password, driver.password);
 
     if (!isValidPassword) {
       return null;
     }
 
-    return createAuthResponse({
+    return this._createAuthResponse({
       id: driver.id_driver,
-      role: "driver",
+      role: AuthRole.DRIVER,
       email: driver.email,
     });
-  },
+  }
 
-  async registerMechanic(
-    input: MechanicRegisterInput,
-  ): Promise<AuthResponse | null> {
-    const existingMechanic = await prisma.mechanic.findUnique({
-      where: { email: input.email },
-    });
+  async registerMechanic(input: MechanicRegisterInput): Promise<AuthResponse | null> {
+    const existingMechanic = await this.authRepository.findMechanicByEmail(input.email);
 
     if (existingMechanic) {
       return null;
     }
 
-    const passwordHash = await hashPassword(input.password);
+    const passwordHash = await this._hashPassword(input.password);
+
     const { latitude, longitude } = await geocodingService.geocodeAddress({
       address: input.address,
       zipCode: String(input.zip_code),
       city: input.city,
     });
-    const mechanic = await prisma.$transaction(async (transaction) => {
-      const createdMechanic = await transaction.mechanic.create({
-        data: {
-          name: input.name,
-          email: input.email,
-          password: passwordHash,
-          address: input.address,
-          zip_code: input.zip_code,
-          city: input.city,
-          description: input.description,
-          image_url: input.image_url,
-          opening_hours: input.opening_hours as Prisma.InputJsonValue,
-          latitude,
-          longitude,
-          siret: input.siret,
-        },
-      });
 
-      const services = mapMechanicServices(createdMechanic.id_mechanic, input.services);
-      if (services.length > 0) {
-        await transaction.garage_service.createMany({
-          data: services,
-        });
-      }
+    const services = this._mapMechanicServices(input.services);
+    const mechanic = await this.authRepository.createMechanicWithServices(
+      {
+        name: input.name,
+        email: input.email,
+        password: passwordHash,
+        address: input.address,
+        zip_code: input.zip_code,
+        city: input.city,
+        description: input.description,
+        image_url: input.image_url,
+        opening_hours: input.opening_hours as Prisma.InputJsonValue,
+        latitude,
+        longitude,
+        siret: input.siret,
+      },
+      services,
+    );
 
-      return createdMechanic;
-    });
-
-    return createAuthResponse({
+    return this._createAuthResponse({
       id: mechanic.id_mechanic,
-      role: "mechanic",
+      role: AuthRole.MECHANIC,
       email: mechanic.email,
     });
-  },
+  };
 
   async loginMechanic(input: MechanicLoginInput): Promise<AuthResponse | null> {
-    const mechanic = await prisma.mechanic.findUnique({
-      where: { email: input.email },
-    });
+    const mechanic = await this.authRepository.findMechanicByEmail(input.email);
 
     if (!mechanic) {
       return null;
     }
 
-    const isValidPassword = await comparePassword(input.password, mechanic.password);
+    const isValidPassword = await this._comparePassword(input.password, mechanic.password);
 
     if (!isValidPassword) {
       return null;
     }
 
-    return createAuthResponse({
+    return this._createAuthResponse({
       id: mechanic.id_mechanic,
-      role: "mechanic",
+      role: AuthRole.MECHANIC,
       email: mechanic.email,
     });
-  },
+  };
 
   async refreshToken(token: string): Promise<AuthResponse | null> {
-    const payload = verifyRefreshToken(token);
+    const payload = this._verifyRefreshToken(token);
 
     if (!payload) {
       return null;
     }
 
-    const userId = parseUserId(payload.sub);
+    const userId = Number(payload.sub);
 
     if (!userId) {
       return null;
     }
 
-    if (payload.role === "driver") {
-      const driver = await prisma.driver.findUnique({
-        where: { id_driver: userId },
-      });
+    if (payload.role === AuthRole.DRIVER) {
+      const driver = await this.authRepository.findDriverById(userId);
 
       if (!driver) {
         return null;
       }
 
-      return createAuthResponse({
+      return this._createAuthResponse({
         id: driver.id_driver,
-        role: "driver",
+        role: AuthRole.DRIVER,
         email: driver.email,
       });
+    } else {
+      const mechanic = await this.authRepository.findMechanicById(userId);
+
+      if (!mechanic) {
+        return null;
+      }
+
+      return this._createAuthResponse({
+        id: mechanic.id_mechanic,
+        role: AuthRole.MECHANIC,
+        email: mechanic.email,
+      });
     }
+  }
 
-    const mechanic = await prisma.mechanic.findUnique({
-      where: { id_mechanic: userId },
+  private _createAccessToken(sub: string, role: AuthRole) {
+    return jwt.sign({ sub, role, tokenType: "access" }, getJwtSecret(), {
+      expiresIn: getJwtExpiresIn(),
     });
+  };
 
-    if (!mechanic) {
+  private _createRefreshToken(sub: string, role: AuthRole) : string {
+    return jwt.sign({ sub, role, tokenType: "refresh" }, getJwtRefreshSecret(), {
+      expiresIn: getJwtRefreshExpiresIn(),
+    });
+  };
+
+  private _hashPassword(password: string) : Promise<string> {
+    return bcrypt.hash(password, 10)
+  };
+
+  private _comparePassword(password: string, hash: string) : Promise<boolean> {
+    return bcrypt.compare(password, hash);
+  };
+
+  private _createAuthResponse (user: { id: number; role: AuthRole; email: string }) : AuthResponse {
+    return {
+      accessToken: this._createAccessToken(String(user.id), user.role),
+      refreshToken: this._createRefreshToken(String(user.id), user.role),
+      user,
+    }
+  };
+
+  private _verifyRefreshToken(token: string): RefreshTokenPayload | null {
+    try {
+      const decoded = jwt.verify(token, getJwtRefreshSecret());
+
+      if (!isRefreshTokenPayload(decoded)) {
+        return null;
+      }
+
+      return decoded;
+    } catch {
       return null;
     }
+  };
 
-    return createAuthResponse({
-      id: mechanic.id_mechanic,
-      role: "mechanic",
-      email: mechanic.email,
-    });
-  },
-};
+  private _mapMechanicServices (categories: MechanicRegisterInput["services"]) {
+    return categories.flatMap((categoryObject) =>
+        Object.entries(categoryObject).flatMap(([category, services]) =>
+            services.map((service) => ({
+              category,
+              label: service.serviceName,
+              price: service.price,
+              description: "",
+            })),
+        ),
+    )
+  }
+}
+
+export const authService = new AuthService(authRepository);

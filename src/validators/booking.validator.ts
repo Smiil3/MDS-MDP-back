@@ -18,11 +18,11 @@ export type UpdateBookingInput = {
   id_vehicle?: number;
 };
 
-export const bookingIdParamSchema = Joi.object<BookingIdParamInput>({
+export const bookingIdParamSchema = Joi.object({
   id: Joi.number().integer().required(),
 }).required();
 
-export const createBookingSchema = Joi.object<CreateBookingInput>({
+export const createBookingSchema = Joi.object({
   appointment_date: Joi.string().isoDate().required(),
   id_mechanic: Joi.number().integer().positive().required(),
   id_booking_status: Joi.number().integer().positive().required(),
@@ -30,7 +30,7 @@ export const createBookingSchema = Joi.object<CreateBookingInput>({
   service_ids: Joi.array().items(Joi.number().integer().positive()).min(1).required(),
 }).required();
 
-export const updateBookingSchema = Joi.object<UpdateBookingInput>({
+export const updateBookingSchema = Joi.object({
   appointment_date: Joi.string().isoDate().optional(),
   id_booking_status: Joi.number().integer().positive().optional(),
   id_vehicle: Joi.number().integer().positive().optional(),

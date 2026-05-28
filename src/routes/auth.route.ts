@@ -1,23 +1,36 @@
 import { Router } from "express";
 import { authController } from "../controllers/auth.controller";
-import { authMiddleware } from "../middlewares/auth.middleware";
+import { validateBody } from "../middlewares/validate.middleware";
+import {
+  driverLoginSchema,
+  driverRegisterSchema,
+  mechanicLoginSchema,
+  mechanicRegisterSchema,
+  refreshTokenSchema,
+} from "../validators/auth.validator";
 
 export const authRouter = Router();
 
-authRouter.post("/drivers/register", authController.registerDriver);
-authRouter.post("/drivers/login", authController.loginDriver);
-authRouter.get(
-  "/drivers/me",
-  authMiddleware(["driver"]),
-  authController.getDriverProfile,
+authRouter.post(
+  "/drivers/register",
+  validateBody(driverRegisterSchema),
+  authController.registerDriver
+);
+authRouter.post(
+  "/drivers/login",
+  validateBody(driverLoginSchema),
+  authController.loginDriver
 );
 
-authRouter.post("/mechanics/register", authController.registerMechanic);
-authRouter.post("/mechanics/login", authController.loginMechanic);
-authRouter.get(
-  "/mechanics/me",
-  authMiddleware(["mechanic"]),
-  authController.getMechanicProfile,
+authRouter.post(
+  "/mechanics/register",
+  validateBody(mechanicRegisterSchema),
+  authController.registerMechanic
+);
+authRouter.post(
+  "/mechanics/login",
+  validateBody(mechanicLoginSchema),
+  authController.loginMechanic
 );
 
-authRouter.post("/refresh", authController.refresh);
+authRouter.post("/refresh", validateBody(refreshTokenSchema), authController.refresh);

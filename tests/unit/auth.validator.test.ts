@@ -8,7 +8,7 @@ import {
 } from "../../src/validators/auth.validator";
 
 describe("auth.validator", () => {
-  it("accepts a valid driver register payload and strips unknown fields", () => {
+  it("rejects driver register payload with unknown fields", () => {
     const payload = {
       last_name: "Doe",
       first_name: "John",
@@ -22,17 +22,9 @@ describe("auth.validator", () => {
 
     const result = validatePayload(driverRegisterSchema, payload);
 
-    expect(result.errors).toBeUndefined();
-    expect(result.value).toBeDefined();
-    expect(result.value).toMatchObject({
-      last_name: "Doe",
-      first_name: "John",
-      email: "john.doe@test.dev",
-      password: "password123",
-      phone: "0102030405",
-      id_subscription: 1,
-    });
-    expect((result.value as Record<string, unknown>).unknown).toBeUndefined();
+    expect(result.value).toBeUndefined();
+    expect(result.errors).toBeDefined();
+    expect(result.errors).toHaveLength(1);
   });
 
   it("rejects invalid driver login payload", () => {
@@ -40,7 +32,7 @@ describe("auth.validator", () => {
 
     expect(result.value).toBeUndefined();
     expect(result.errors).toBeDefined();
-    expect(result.errors).toHaveLength(2);
+    expect(result.errors).toHaveLength(1);
   });
 
   it("accepts valid mechanic register payload", () => {

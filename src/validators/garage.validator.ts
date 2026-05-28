@@ -1,4 +1,5 @@
 import Joi from "joi";
+import { validatePayload as validatePayloadBase } from "./validator.utils";
 
 export type NearbyGaragesQuery = {
   lat?: number;
@@ -11,7 +12,7 @@ export type GarageIdParam = {
   id: number;
 };
 
-export const nearbyGaragesQuerySchema = Joi.object<NearbyGaragesQuery>({
+export const nearbyGaragesQuerySchema = Joi.object({
   lat: Joi.number().min(-90).max(90).optional(),
   lng: Joi.number().min(-180).max(180).optional(),
   search: Joi.string().trim().allow("").optional(),
@@ -30,48 +31,24 @@ export const nearbyGaragesQuerySchema = Joi.object<NearbyGaragesQuery>({
   .required();
 
 export const validateNearbyGaragesQuery = (query: unknown) => {
-  const { error, value } = nearbyGaragesQuerySchema.validate(query, {
-    abortEarly: false,
-    stripUnknown: true,
-  });
+  const result = validatePayloadBase(nearbyGaragesQuerySchema, query);
 
-  if (error) {
-    return {
-      errors: error.details.map((detail) =>
-        detail.type === "any.invalid"
-          ? "lat and lng must be provided together."
-          : detail.message,
-      ),
-    };
-  }
-
-  return { value };
+  return result;
 };
 
-const garageIdParamSchema = Joi.object<GarageIdParam>({
+const garageIdParamSchema = Joi.object({
   id: Joi.number().integer().positive().required(),
 }).required();
 
 export const validateGarageIdParam = (params: unknown) => {
-  const { error, value } = garageIdParamSchema.validate(params, {
-    abortEarly: false,
-    stripUnknown: true,
-  });
-
-  if (error) {
-    return {
-      errors: error.details.map((detail) => detail.message),
-    };
-  }
-
-  return { value };
+  return validatePayloadBase(garageIdParamSchema, params);
 };
 
 export type GarageSlotsQuery = {
   date: string;
 };
 
-const garageSlotsQuerySchema = Joi.object<GarageSlotsQuery>({
+const garageSlotsQuerySchema = Joi.object({
   date: Joi.string()
     .pattern(/^\d{4}-\d{2}-\d{2}$/)
     .required()
@@ -79,16 +56,5 @@ const garageSlotsQuerySchema = Joi.object<GarageSlotsQuery>({
 }).required();
 
 export const validateGarageSlotsQuery = (query: unknown) => {
-  const { error, value } = garageSlotsQuerySchema.validate(query, {
-    abortEarly: false,
-    stripUnknown: true,
-  });
-
-  if (error) {
-    return {
-      errors: error.details.map((detail) => detail.message),
-    };
-  }
-
-  return { value };
+  return validatePayloadBase(garageSlotsQuerySchema, query);
 };
