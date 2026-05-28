@@ -1,15 +1,15 @@
 import Joi from "joi";
 import { validatePayload as validatePayloadBase } from "./validator.utils";
 
-type AddressSuggestionQuery = {
+export type AddressSuggestionQuery = {
   query: string;
 };
 
-type CitiesByPostalCodeQuery = {
+export type CitiesByPostalCodeQuery = {
   postalCode: string;
 };
 
-type SiretParam = {
+export type SiretParam = {
   siret: string;
 };
 
@@ -26,10 +26,10 @@ const siretParamSchema = Joi.object({
 }).required();
 
 export const validateAddressSuggestionQuery = (payload: unknown) =>
-  validatePayloadBase(addressSuggestionQuerySchema, payload);
+  validatePayloadBase<AddressSuggestionQuery>(addressSuggestionQuerySchema, payload);
 
 export const validateCitiesByPostalCodeQuery = (payload: unknown) =>
-  validatePayloadBase(citiesByPostalCodeQuerySchema, payload);
+  validatePayloadBase<CitiesByPostalCodeQuery>(citiesByPostalCodeQuerySchema, payload);
 
 export const validateSiretParam = (payload: unknown) =>
-  validatePayloadBase(siretParamSchema, payload);
+  validatePayloadBase<SiretParam>(siretParamSchema, payload);

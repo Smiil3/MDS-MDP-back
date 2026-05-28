@@ -1,17 +1,19 @@
 import { type ObjectSchema } from "joi";
 
-type ValidatePayloadResult = {
-  value?: unknown;
+type ValidatePayloadResult<T = unknown> = {
+  value?: T;
   errors?: string[];
 };
 
-export const validatePayload = (
+export const validatePayload = <T = unknown>(
   schema: ObjectSchema,
   payload: unknown,
-): ValidatePayloadResult => {
+  options?: { stripUnknown?: boolean }
+): ValidatePayloadResult<T> => {
   const { error, value } = schema.validate(payload, {
     abortEarly: true,
     allowUnknown: false,
+    stripUnknown: options?.stripUnknown ?? false,
   });
 
   if (error) {
@@ -20,5 +22,5 @@ export const validatePayload = (
     };
   }
 
-  return { value };
+  return { value: value as T };
 };

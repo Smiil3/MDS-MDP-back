@@ -4,14 +4,18 @@ import {
   bookingIdParamSchema,
   createBookingSchema,
   updateBookingSchema,
+  type BookingIdParamInput,
+  type CreateBookingInput,
+  type UpdateBookingInput,
 } from "../validators/booking.validator";
 import { validatePayload } from "../validators/validator.utils";
+import {AuthRole} from "../types/auth";
 
 type IdParam = { id: string };
 
 export const bookingController = {
   async getById(req: Request<IdParam>, res: Response) {
-    const { errors, value } = validatePayload(bookingIdParamSchema, req.params);
+    const { errors, value } = validatePayload<BookingIdParamInput>(bookingIdParamSchema, req.params);
 
     if (errors || !value) {
       res.status(400).json({ message: "Invalid booking id." });
@@ -25,8 +29,8 @@ export const bookingController = {
     }
 
     const authUser = req.authUser!;
-    const isDriver = authUser.role === "driver" && booking.driver.id_driver === parseInt(authUser.sub);
-    const isMechanic = authUser.role === "mechanic" && booking.mechanic.id_mechanic === parseInt(authUser.sub);
+    const isDriver = authUser.role === AuthRole.DRIVER && booking.driver.id_driver === parseInt(authUser.sub);
+    const isMechanic = authUser.role === AuthRole.MECHANIC && booking.mechanic.id_mechanic === parseInt(authUser.sub);
 
     if (!isDriver && !isMechanic) {
       res.status(403).json({ message: "Access denied." });
@@ -43,7 +47,7 @@ export const bookingController = {
   },
 
   async create(req: Request, res: Response) {
-    const { errors, value } = validatePayload(createBookingSchema, req.body);
+    const { errors, value } = validatePayload<CreateBookingInput>(createBookingSchema, req.body);
 
     if (errors || !value) {
       res.status(400).json({ message: "Invalid payload.", errors });
@@ -56,7 +60,7 @@ export const bookingController = {
   },
 
   async update(req: Request<IdParam>, res: Response) {
-    const { errors: paramErrors, value: params } = validatePayload(
+    const { errors: paramErrors, value: params } = validatePayload<BookingIdParamInput>(
       bookingIdParamSchema,
       req.params,
     );
@@ -77,7 +81,7 @@ export const bookingController = {
       return;
     }
 
-    const { errors, value } = validatePayload(updateBookingSchema, req.body);
+    const { errors, value } = validatePayload<UpdateBookingInput>(updateBookingSchema, req.body);
 
     if (errors || !value) {
       res.status(400).json({ message: "Invalid payload.", errors });
@@ -94,7 +98,7 @@ export const bookingController = {
   },
 
   async remove(req: Request<IdParam>, res: Response) {
-    const { errors, value } = validatePayload(bookingIdParamSchema, req.params);
+    const { errors, value } = validatePayload<BookingIdParamInput>(bookingIdParamSchema, req.params);
 
     if (errors || !value) {
       res.status(400).json({ message: "Invalid booking id." });

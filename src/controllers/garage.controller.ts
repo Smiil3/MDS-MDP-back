@@ -1,5 +1,5 @@
-import { type Request, type Response } from "express";
-import { garageService } from "../services/garage.service";
+import {type Request, type Response} from "express";
+import {garageService} from "../services/garage.service";
 import {
   validateGarageIdParam,
   validateGarageSlotsQuery,

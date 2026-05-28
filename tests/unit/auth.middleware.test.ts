@@ -34,7 +34,7 @@ describe("auth.middleware", () => {
   });
 
   it("returns 403 when role is not allowed", () => {
-    const token = jwt.sign({ sub: "1", role: "driver", tokenType: "access" }, secret, {
+    const token = jwt.sign({ sub: "1", role: AuthRole.DRIVER, tokenType: "access" }, secret, {
       expiresIn: "1h",
     });
     const req = {
@@ -43,14 +43,14 @@ describe("auth.middleware", () => {
     const res = createResponse();
     const next = jest.fn() as NextFunction;
 
-    authMiddleware(["mechanic"])(req, res, next);
+    authMiddleware([AuthRole.MECHANIC])(req, res, next);
 
     expect(res.status).toHaveBeenCalledWith(403);
     expect(next).not.toHaveBeenCalled();
   });
 
   it("returns 401 for non-access token payload", () => {
-    const token = jwt.sign({ sub: "2", role: "mechanic", tokenType: "refresh" }, secret, {
+    const token = jwt.sign({ sub: "2", role: AuthRole.MECHANIC, tokenType: "refresh" }, secret, {
       expiresIn: "1h",
     });
     const req = {
@@ -59,14 +59,14 @@ describe("auth.middleware", () => {
     const res = createResponse();
     const next = jest.fn() as NextFunction;
 
-    authMiddleware(["mechanic"])(req, res, next);
+    authMiddleware([AuthRole.MECHANIC])(req, res, next);
 
     expect(res.status).toHaveBeenCalledWith(401);
     expect(next).not.toHaveBeenCalled();
   });
 
   it("sets req.authUser and calls next for a valid token", () => {
-    const token = jwt.sign({ sub: "2", role: "mechanic", tokenType: "access" }, secret, {
+    const token = jwt.sign({ sub: "2", role: AuthRole.MECHANIC, tokenType: "access" }, secret, {
       expiresIn: "1h",
     });
     const req = {
@@ -75,9 +75,9 @@ describe("auth.middleware", () => {
     const res = createResponse();
     const next = jest.fn() as NextFunction;
 
-    authMiddleware(["mechanic"])(req, res, next);
+    authMiddleware([AuthRole.MECHANIC])(req, res, next);
 
     expect(next).toHaveBeenCalled();
-    expect(req.authUser).toMatchObject({ sub: "2", role: "mechanic" });
+    expect(req.authUser).toMatchObject({ sub: "2", role: AuthRole.MECHANIC });
   });
 });

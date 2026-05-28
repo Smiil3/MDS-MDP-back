@@ -91,7 +91,7 @@ describe("user routes (component)", () => {
       image_url: null,
     } as never);
 
-    const token = jwt.sign({ sub: "9", role: "driver", tokenType: "access" }, secret, {
+    const token = jwt.sign({ sub: "9", role: AuthRole.DRIVER, tokenType: "access" }, secret, {
       expiresIn: "1h",
     });
 
@@ -107,7 +107,7 @@ describe("user routes (component)", () => {
   });
 
   it("PATCH /api/users/me returns 400 on invalid payload", async () => {
-    const token = jwt.sign({ sub: "9", role: "driver", tokenType: "access" }, secret, {
+    const token = jwt.sign({ sub: "9", role: AuthRole.DRIVER, tokenType: "access" }, secret, {
       expiresIn: "1h",
     });
 
@@ -133,7 +133,7 @@ describe("user routes (component)", () => {
       image_url: "https://img/avatar.jpg",
     } as never);
 
-    const token = jwt.sign({ sub: "9", role: "driver", tokenType: "access" }, secret, {
+    const token = jwt.sign({ sub: "9", role: AuthRole.DRIVER, tokenType: "access" }, secret, {
       expiresIn: "1h",
     });
 
@@ -163,7 +163,7 @@ describe("user routes (component)", () => {
       },
     ] as never);
 
-    const token = jwt.sign({ sub: "9", role: "driver", tokenType: "access" }, secret, {
+    const token = jwt.sign({ sub: "9", role: AuthRole.DRIVER, tokenType: "access" }, secret, {
       expiresIn: "1h",
     });
 
@@ -188,7 +188,7 @@ describe("user routes (component)", () => {
       mileage: 12000,
     } as never);
 
-    const token = jwt.sign({ sub: "9", role: "driver", tokenType: "access" }, secret, {
+    const token = jwt.sign({ sub: "9", role: AuthRole.DRIVER, tokenType: "access" }, secret, {
       expiresIn: "1h",
     });
 

@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import { authService } from "../../src/services/auth.service";
 import { geocodingService } from "../../src/services/geocoding.service";
 import { prisma } from "../../src/prisma/client";
+import {AuthRole} from "../../src/types/auth";
 
 jest.mock("../../src/prisma/client", () => ({
   prisma: {
@@ -134,7 +135,7 @@ describe("auth.service", () => {
     expect(result).toEqual({
       accessToken: "access-token",
       refreshToken: "refresh-token",
-      user: { id: 10, role: "driver", email: "john@test.dev" },
+      user: { id: 10, role: AuthRole.DRIVER, email: "john@test.dev" },
     });
   });
 
@@ -173,7 +174,7 @@ describe("auth.service", () => {
     expect(result).toEqual({
       accessToken: "mechanic-access-token",
       refreshToken: "mechanic-refresh-token",
-      user: { id: 21, role: "mechanic", email: "garage@test.dev" },
+      user: { id: 21, role: AuthRole.MECHANIC, email: "garage@test.dev" },
     });
   });
 
@@ -255,7 +256,7 @@ describe("auth.service", () => {
     expect(result).toEqual({
       accessToken: "mechanic-access-token",
       refreshToken: "mechanic-refresh-token",
-      user: { id: 21, role: "mechanic", email: "garage@test.dev" },
+      user: { id: 21, role: AuthRole.MECHANIC, email: "garage@test.dev" },
     });
   });
 
@@ -300,7 +301,7 @@ describe("auth.service", () => {
   it("refreshToken returns new tokens for valid driver refresh token", async () => {
     jwtMock.verify.mockReturnValue({
       sub: "7",
-      role: "driver",
+      role: AuthRole.DRIVER,
       tokenType: "refresh",
     } as never);
     prismaMock.driver.findUnique.mockResolvedValue({
@@ -316,7 +317,7 @@ describe("auth.service", () => {
     expect(result).toEqual({
       accessToken: "new-access-token",
       refreshToken: "new-refresh-token",
-      user: { id: 7, role: "driver", email: "driver@test.dev" },
+      user: { id: 7, role: AuthRole.DRIVER, email: "driver@test.dev" },
     });
   });
 });

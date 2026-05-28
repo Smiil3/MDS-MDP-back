@@ -4,6 +4,9 @@ import {
   createMechanicSchema,
   mechanicIdParamSchema,
   updateMechanicSchema,
+  type MechanicIdParamInput,
+  type CreateMechanicInput,
+  type UpdateMechanicInput,
 } from "../validators/mechanic.validator";
 import { validatePayload } from "../validators/validator.utils";
 
@@ -19,7 +22,7 @@ export const mechanicController = {
   },
 
   async getById(req: Request<IdParam>, res: Response) {
-    const { errors, value } = validatePayload(mechanicIdParamSchema, req.params);
+    const { errors, value } = validatePayload<MechanicIdParamInput>(mechanicIdParamSchema, req.params);
 
     if (errors || !value) {
       res.status(400).json({ message: "Invalid mechanic id." });
@@ -36,7 +39,7 @@ export const mechanicController = {
   },
 
   async create(req: Request, res: Response) {
-    const { errors, value } = validatePayload(createMechanicSchema, req.body);
+    const { errors, value } = validatePayload<CreateMechanicInput>(createMechanicSchema, req.body);
 
     if (errors || !value) {
       res.status(400).json({ message: "Invalid payload.", errors });
@@ -49,7 +52,7 @@ export const mechanicController = {
   },
 
   async update(req: Request<IdParam>, res: Response) {
-    const { errors: paramErrors, value: params } = validatePayload(
+    const { errors: paramErrors, value: params } = validatePayload<MechanicIdParamInput>(
       mechanicIdParamSchema,
       req.params,
     );
@@ -65,7 +68,7 @@ export const mechanicController = {
       return;
     }
 
-    const { errors, value } = validatePayload(updateMechanicSchema, req.body);
+    const { errors, value } = validatePayload<UpdateMechanicInput>(updateMechanicSchema, req.body);
 
     if (errors || !value) {
       res.status(400).json({ message: "Invalid payload.", errors });
@@ -92,7 +95,7 @@ export const mechanicController = {
   },
 
   async remove(req: Request<IdParam>, res: Response) {
-    const { errors, value } = validatePayload(mechanicIdParamSchema, req.params);
+    const { errors, value } = validatePayload<MechanicIdParamInput>(mechanicIdParamSchema, req.params);
 
     if (errors || !value) {
       res.status(400).json({ message: "Invalid mechanic id." });
@@ -110,7 +113,7 @@ export const mechanicController = {
   },
 
   async getBookings(req: Request<IdParam>, res: Response) {
-    const { errors, value } = validatePayload(mechanicIdParamSchema, req.params);
+    const { errors, value } = validatePayload<MechanicIdParamInput>(mechanicIdParamSchema, req.params);
 
     if (errors || !value) {
       res.status(400).json({ message: "Invalid mechanic id." });
@@ -128,7 +131,7 @@ export const mechanicController = {
   },
 
   async getServices(req: Request<IdParam>, res: Response) {
-    const { errors, value } = validatePayload(mechanicIdParamSchema, req.params);
+    const { errors, value } = validatePayload<MechanicIdParamInput>(mechanicIdParamSchema, req.params);
 
     if (errors || !value) {
       res.status(400).json({ message: "Invalid mechanic id." });
@@ -146,7 +149,7 @@ export const mechanicController = {
   },
 
   async getReviews(req: Request<IdParam>, res: Response) {
-    const { errors, value } = validatePayload(mechanicIdParamSchema, req.params);
+    const { errors, value } = validatePayload<MechanicIdParamInput>(mechanicIdParamSchema, req.params);
 
     if (errors || !value) {
       res.status(400).json({ message: "Invalid mechanic id." });

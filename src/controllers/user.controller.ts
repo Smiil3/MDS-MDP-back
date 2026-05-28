@@ -5,6 +5,9 @@ import {
   createUserSchema,
   createVehicleSchema,
   updateDriverProfileSchema,
+  type CreateUserInput,
+  type CreateVehicleInput,
+  type UpdateDriverProfileInput,
 } from "../validators/user.validator";
 import { validatePayload } from "../validators/validator.utils";
 
@@ -14,7 +17,7 @@ export const userController = {
     res.status(200).json(users);
   },
   async createUser(req: Request, res: Response) {
-    const { errors, value } = validatePayload(createUserSchema, req.body);
+    const { errors, value } = validatePayload<CreateUserInput>(createUserSchema, req.body);
 
     if (errors || !value) {
       res.status(400).json({ message: "Invalid payload.", errors });
@@ -42,7 +45,7 @@ export const userController = {
     res.status(200).json({ profile });
   },
   async updateCurrentDriverProfile(req: Request, res: Response) {
-    const { errors, value } = validatePayload(updateDriverProfileSchema, req.body, {
+    const { errors, value } = validatePayload<UpdateDriverProfileInput>(updateDriverProfileSchema, req.body, {
       stripUnknown: true,
     });
 
@@ -83,7 +86,7 @@ export const userController = {
     res.status(200).json({ vehicles });
   },
   async createCurrentDriverVehicle(req: Request, res: Response) {
-    const { errors, value } = validatePayload(createVehicleSchema, req.body, {
+    const { errors, value } = validatePayload<CreateVehicleInput>(createVehicleSchema, req.body, {
       stripUnknown: true,
     });
 

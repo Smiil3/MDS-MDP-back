@@ -12,6 +12,10 @@ export type GarageIdParam = {
   id: number;
 };
 
+export type GarageSlotsQuery = {
+  date: string;
+};
+
 export const nearbyGaragesQuerySchema = Joi.object({
   lat: Joi.number().min(-90).max(90).optional(),
   lng: Joi.number().min(-180).max(180).optional(),
@@ -31,9 +35,7 @@ export const nearbyGaragesQuerySchema = Joi.object({
   .required();
 
 export const validateNearbyGaragesQuery = (query: unknown) => {
-  const result = validatePayloadBase(nearbyGaragesQuerySchema, query);
-
-  return result;
+    return validatePayloadBase<NearbyGaragesQuery>(nearbyGaragesQuerySchema, query);
 };
 
 const garageIdParamSchema = Joi.object({
@@ -41,11 +43,7 @@ const garageIdParamSchema = Joi.object({
 }).required();
 
 export const validateGarageIdParam = (params: unknown) => {
-  return validatePayloadBase(garageIdParamSchema, params);
-};
-
-export type GarageSlotsQuery = {
-  date: string;
+  return validatePayloadBase<GarageIdParam>(garageIdParamSchema, params);
 };
 
 const garageSlotsQuerySchema = Joi.object({
@@ -56,5 +54,5 @@ const garageSlotsQuerySchema = Joi.object({
 }).required();
 
 export const validateGarageSlotsQuery = (query: unknown) => {
-  return validatePayloadBase(garageSlotsQuerySchema, query);
+  return validatePayloadBase<GarageSlotsQuery>(garageSlotsQuerySchema, query);
 };

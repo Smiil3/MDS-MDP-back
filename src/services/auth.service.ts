@@ -174,60 +174,60 @@ export class AuthService {
     }
   }
 
-  private _createAccessToken(sub: string, role: AuthRole) {
-    return jwt.sign({ sub, role, tokenType: "access" }, getJwtSecret(), {
-      expiresIn: getJwtExpiresIn(),
-    });
-  };
+   private _createAccessToken(sub: string, role: AuthRole) {
+     return jwt.sign({ sub, role, tokenType: "access" }, getJwtSecret(), {
+       expiresIn: getJwtExpiresIn(),
+     });
+   }
 
-  private _createRefreshToken(sub: string, role: AuthRole) : string {
-    return jwt.sign({ sub, role, tokenType: "refresh" }, getJwtRefreshSecret(), {
-      expiresIn: getJwtRefreshExpiresIn(),
-    });
-  };
+   private _createRefreshToken(sub: string, role: AuthRole) : string {
+     return jwt.sign({ sub, role, tokenType: "refresh" }, getJwtRefreshSecret(), {
+       expiresIn: getJwtRefreshExpiresIn(),
+     });
+   }
 
-  private _hashPassword(password: string) : Promise<string> {
-    return bcrypt.hash(password, 10)
-  };
+   private _hashPassword(password: string) : Promise<string> {
+     return bcrypt.hash(password, 10)
+   }
 
-  private _comparePassword(password: string, hash: string) : Promise<boolean> {
-    return bcrypt.compare(password, hash);
-  };
+   private _comparePassword(password: string, hash: string) : Promise<boolean> {
+     return bcrypt.compare(password, hash);
+   }
 
-  private _createAuthResponse (user: { id: number; role: AuthRole; email: string }) : AuthResponse {
-    return {
-      accessToken: this._createAccessToken(String(user.id), user.role),
-      refreshToken: this._createRefreshToken(String(user.id), user.role),
-      user,
-    }
-  };
+   private _createAuthResponse (user: { id: number; role: AuthRole; email: string }) : AuthResponse {
+     return {
+       accessToken: this._createAccessToken(String(user.id), user.role),
+       refreshToken: this._createRefreshToken(String(user.id), user.role),
+       user,
+     }
+   }
 
-  private _verifyRefreshToken(token: string): RefreshTokenPayload | null {
-    try {
-      const decoded = jwt.verify(token, getJwtRefreshSecret());
+   private _verifyRefreshToken(token: string): RefreshTokenPayload | null {
+     try {
+       const decoded = jwt.verify(token, getJwtRefreshSecret());
 
-      if (!isRefreshTokenPayload(decoded)) {
-        return null;
-      }
+       if (!isRefreshTokenPayload(decoded)) {
+         return null;
+       }
 
-      return decoded;
-    } catch {
-      return null;
-    }
-  };
+       return decoded;
+     } catch {
+       return null;
+     }
+   }
 
-  private _mapMechanicServices (categories: MechanicRegisterInput["services"]) {
-    return categories.flatMap((categoryObject) =>
-        Object.entries(categoryObject).flatMap(([category, services]) =>
-            services.map((service) => ({
-              category,
-              label: service.serviceName,
-              price: service.price,
-              description: "",
-            })),
-        ),
-    )
-  }
+   private _mapMechanicServices (categories: MechanicRegisterInput["services"]) {
+     return categories.flatMap((categoryObject) =>
+         Object.entries(categoryObject).flatMap(([category, services]) =>
+             services.map((service) => ({
+               category,
+               label: service.serviceName,
+               price: service.price,
+               description: "",
+             })),
+         ),
+     )
+   }
 }
 
 export const authService = new AuthService(authRepository);
