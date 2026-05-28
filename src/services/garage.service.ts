@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import { prisma } from "../prisma/client";
+import { GarageRepository, garageRepository } from "../repositories/garage.repository";
 import { NearbyGaragesQuery } from "../validators/garage.validator";
 
 export type GarageCardDto = {
@@ -79,25 +79,6 @@ const computeDistanceMeters = (
   return 2 * EARTH_RADIUS_METERS * Math.atan2(Math.sqrt(haversineA), Math.sqrt(1 - haversineA));
 };
 
-const toGarageCardDto = (
-  mechanic: MechanicProjection,
-  distanceMeters: number | null,
-  averageRating: number | null,
-): GarageCardDto => ({
-  id: mechanic.id_mechanic,
-  name: mechanic.name,
-  city: mechanic.city,
-  address: mechanic.address,
-  latitude: mechanic.latitude,
-  longitude: mechanic.longitude,
-  imageUrl: mechanic.image_url,
-  openingHours: mechanic.opening_hours,
-  description: mechanic.description,
-  distanceMeters,
-  averageRating,
-  services: toCategorizedServices(mechanic.garage_service),
-});
-
 const toCategorizedServices = (
   services: MechanicDetailsProjection["garage_service"],
 ): GarageServicesDto => {
@@ -118,6 +99,25 @@ const toCategorizedServices = (
     [category]: categoryServices,
   }));
 };
+
+const toGarageCardDto = (
+  mechanic: MechanicProjection,
+  distanceMeters: number | null,
+  averageRating: number | null,
+): GarageCardDto => ({
+  id: mechanic.id_mechanic,
+  name: mechanic.name,
+  city: mechanic.city,
+  address: mechanic.address,
+  latitude: mechanic.latitude,
+  longitude: mechanic.longitude,
+  imageUrl: mechanic.image_url,
+  openingHours: mechanic.opening_hours,
+  description: mechanic.description,
+  distanceMeters,
+  averageRating,
+  services: toCategorizedServices(mechanic.garage_service),
+});
 
 const toGarageDetailsDto = (
   mechanic: MechanicDetailsProjection,
@@ -171,67 +171,31 @@ const toHHMM = (totalMinutes: number): string => {
   return `${h}:${m}`;
 };
 
-export const garageService = {
+export class GarageService {
+  constructor(private readonly garageRepository: GarageRepository) {}
+
   async findNearby(query: NearbyGaragesQuery): Promise<GarageCardDto[]> {
     const limit = query.limit ?? 5;
     const where = buildSearchWhere(query.search);
     const hasCoords = typeof query.lat === "number" && typeof query.lng === "number";
 
-    const garageServiceSelect = {
-      id_garage_service: true,
-      category: true,
-      label: true,
-      price: true,
-    };
-
-    const garageServiceOrderBy = [
-      { category: "asc" as const },
-      { id_garage_service: "asc" as const },
-    ];
-
     let mechanicsWithDistance: { mechanic: MechanicProjection; distanceMeters: number | null }[];
 
     if (!hasCoords) {
-      const mechanics = await prisma.mechanic.findMany({
+      const mechanics = await this.garageRepository.findManyWithServices(
         where,
-        orderBy: { name: "asc" },
-        take: limit,
-        select: {
-          id_mechanic: true,
-          name: true,
-          city: true,
-          address: true,
-          image_url: true,
-          opening_hours: true,
-          description: true,
-          latitude: true,
-          longitude: true,
-          garage_service: { select: garageServiceSelect, orderBy: garageServiceOrderBy },
-        },
-      });
-
+        { name: "asc" },
+        limit,
+      );
       mechanicsWithDistance = mechanics.map((mechanic) => ({ mechanic, distanceMeters: null }));
     } else {
       const lat = query.lat as number;
       const lng = query.lng as number;
 
-      const mechanics = await prisma.mechanic.findMany({
-        where: {
-          AND: [where, { latitude: { not: null } }, { longitude: { not: null } }],
-        },
-        select: {
-          id_mechanic: true,
-          name: true,
-          city: true,
-          address: true,
-          image_url: true,
-          opening_hours: true,
-          description: true,
-          latitude: true,
-          longitude: true,
-          garage_service: { select: garageServiceSelect, orderBy: garageServiceOrderBy },
-        },
-      });
+      const mechanics = await this.garageRepository.findManyWithServices(
+        { AND: [where, { latitude: { not: null } }, { longitude: { not: null } }] },
+        { name: "asc" },
+      );
 
       mechanicsWithDistance = mechanics
         .flatMap((mechanic) => {
@@ -258,11 +222,7 @@ export const garageService = {
     }
 
     const mechanicIds = mechanicsWithDistance.map(({ mechanic }) => mechanic.id_mechanic);
-    const ratingAggregates = await prisma.review.groupBy({
-      by: ["id_mechanic"],
-      where: { id_mechanic: { in: mechanicIds } },
-      _avg: { rating: true },
-    });
+    const ratingAggregates = await this.garageRepository.groupRatingsByMechanicIds(mechanicIds);
 
     const ratingByMechanicId = new Map(
       ratingAggregates.map((r) => [r.id_mechanic, r._avg.rating]),
@@ -275,13 +235,10 @@ export const garageService = {
         ratingByMechanicId.get(mechanic.id_mechanic) ?? null,
       ),
     );
-  },
+  }
 
   async findAvailableSlots(garageId: number, date: string): Promise<AvailableSlotDto[]> {
-    const mechanic = await prisma.mechanic.findUnique({
-      where: { id_mechanic: garageId },
-      select: { opening_hours: true },
-    });
+    const mechanic = await this.garageRepository.findOpeningHours(garageId);
 
     if (!mechanic?.opening_hours) {
       return [];
@@ -298,21 +255,12 @@ export const garageService = {
     const dayStart = new Date(`${date}T00:00:00.000Z`);
     const dayEnd = new Date(`${date}T23:59:59.999Z`);
 
-    const bookings = await prisma.booking.findMany({
-      where: {
-        id_mechanic: garageId,
-        appointment_date: {
-          gte: dayStart,
-          lte: dayEnd,
-        },
-      },
-      select: {
-        appointment_date: true,
-      },
-    });
+    const bookings = await this.garageRepository.findBookingsForDay(garageId, dayStart, dayEnd);
 
     const bookedTimes = new Set(
-      bookings.map((b) => toHHMM(b.appointment_date.getUTCHours() * 60 + b.appointment_date.getUTCMinutes())),
+      bookings.map((b) =>
+        toHHMM(b.appointment_date.getUTCHours() * 60 + b.appointment_date.getUTCMinutes()),
+      ),
     );
 
     const availableSlots: AvailableSlotDto[] = [];
@@ -332,46 +280,18 @@ export const garageService = {
     }
 
     return availableSlots;
-  },
+  }
 
   async findById(garageId: number): Promise<GarageDetailsDto | null> {
-    const mechanic = await prisma.mechanic.findUnique({
-      where: {
-        id_mechanic: garageId,
-      },
-      select: {
-        id_mechanic: true,
-        name: true,
-        city: true,
-        address: true,
-        image_url: true,
-        opening_hours: true,
-        description: true,
-        latitude: true,
-        longitude: true,
-        phone: true,
-        email: true,
-        garage_service: {
-          select: {
-            id_garage_service: true,
-            category: true,
-            label: true,
-            price: true,
-          },
-          orderBy: [{ category: "asc" }, { id_garage_service: "asc" }],
-        },
-      },
-    });
+    const mechanic = await this.garageRepository.findByIdWithDetails(garageId);
 
     if (!mechanic) {
       return null;
     }
 
-    const aggregate = await prisma.review.aggregate({
-      where: { id_mechanic: garageId },
-      _avg: { rating: true },
-    });
-
+    const aggregate = await this.garageRepository.aggregateRatingForGarage(garageId);
     return toGarageDetailsDto(mechanic, aggregate._avg.rating);
-  },
-};
+  }
+}
+
+export const garageService = new GarageService(garageRepository);
