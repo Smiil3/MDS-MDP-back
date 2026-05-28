@@ -179,7 +179,7 @@ export class LocationService {
     }
 
     const params = new URLSearchParams({
-      query: siret,
+      q: siret,
       page: "1",
       per_page: "1",
     });
