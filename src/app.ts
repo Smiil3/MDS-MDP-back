@@ -13,6 +13,10 @@ export const app = express();
 app.use(cors({ origin: "http://localhost:8081" }));
 app.use(express.json());
 
+app.get("/health", (_req, res) => {
+  res.status(200).json({ status: "ok" });
+});
+
 app.get("/api", (_req, res) => {
   res.status(200).json({ status: "ok" });
 });

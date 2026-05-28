@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken";
 import request from "supertest";
 import { app } from "../../src/app";
 import { userService } from "../../src/services/user.service";
+import { AuthRole } from "../../src/types/auth";
 
 jest.mock("../../src/services/user.service", () => ({
   userService: {

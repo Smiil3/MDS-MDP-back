@@ -6,4 +6,12 @@ module.exports = {
   clearMocks: true,
   setupFiles: ["<rootDir>/tests/setup-env.ts"],
   moduleFileExtensions: ["ts", "js", "json"],
+  transform: {
+    "^.+\\.tsx?$": ["ts-jest", {
+      tsconfig: {
+        esModuleInterop: true,
+        allowSyntheticDefaultImports: true,
+      },
+    }],
+  },
 };
