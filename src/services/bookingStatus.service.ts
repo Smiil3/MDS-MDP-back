@@ -1,25 +1,20 @@
-import { prisma } from "../prisma/client";
+import { BookingStatusRepository, bookingStatusRepository } from "../repositories/bookingStatus.repository";
 
 export type BookingStatusDto = {
   id: number;
   label: string;
 };
 
-export const bookingStatusService = {
-  async findAll(): Promise<BookingStatusDto[]> {
-    const statuses = await prisma.booking_status.findMany({
-      select: {
-        id_booking_status: true,
-        label: true,
-      },
-      orderBy: {
-        id_booking_status: "asc",
-      },
-    });
+export class BookingStatusService {
+  constructor(private readonly bookingStatusRepository: BookingStatusRepository) {}
 
+  async findAll(): Promise<BookingStatusDto[]> {
+    const statuses = await this.bookingStatusRepository.findAll();
     return statuses.map((status) => ({
       id: status.id_booking_status,
       label: status.label,
     }));
-  },
-};
+  }
+}
+
+export const bookingStatusService = new BookingStatusService(bookingStatusRepository);
