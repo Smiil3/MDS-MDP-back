@@ -1,8 +1,11 @@
+import { Prisma } from "@prisma/client";
 import { UserRepository, userRepository } from "../repositories/user.repository";
 import {
   type CreateVehicleInput,
   type UpdateDriverProfileInput,
 } from "../validators/user.validator";
+
+export class EmailAlreadyInUseError extends Error {}
 
 type CreateUserInput = {
   last_name: string;
@@ -59,15 +62,25 @@ export class UserService {
     driverId: number,
     data: UpdateDriverProfileInput,
   ): Promise<DriverProfileDto> {
-    const updatedDriver = await this.userRepository.updateProfileById(driverId, {
-      first_name: data.first_name,
-      last_name: data.last_name,
-      phone: data.phone,
-      image_url: data.image_url,
-      email: data.email,
-      birth_date: data.birth_date ? new Date(data.birth_date) : undefined,
-    });
-    return this._mapDriverProfile(updatedDriver);
+    try {
+      const updatedDriver = await this.userRepository.updateProfileById(driverId, {
+        first_name: data.first_name,
+        last_name: data.last_name,
+        phone: data.phone,
+        image_url: data.image_url,
+        email: data.email,
+        birth_date: data.birth_date ? new Date(data.birth_date) : undefined,
+      });
+      return this._mapDriverProfile(updatedDriver);
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2002"
+      ) {
+        throw new EmailAlreadyInUseError("Email already in use.");
+      }
+      throw error;
+    }
   }
 
   async listVehiclesByDriverId(driverId: number): Promise<DriverVehicleDto[]> {

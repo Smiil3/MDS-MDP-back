@@ -1,6 +1,5 @@
 import { type Request, type Response } from "express";
-import { Prisma } from "@prisma/client";
-import { userService } from "../services/user.service";
+import { userService, EmailAlreadyInUseError } from "../services/user.service";
 import {
   createUserSchema,
   createVehicleSchema,
@@ -60,11 +59,8 @@ export class UserController {
       const profile = await userService.updateProfileById(userId, value);
       res.status(200).json({ profile });
     } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === "P2002"
-      ) {
-        res.status(409).json({ message: "Email already in use." });
+      if (error instanceof EmailAlreadyInUseError) {
+        res.status(409).json({ message: error.message });
         return;
       }
       throw error;

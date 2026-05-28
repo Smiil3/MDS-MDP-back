@@ -1,5 +1,5 @@
 import { type Request, type Response } from "express";
-import { mechanicService } from "../services/mechanic.service";
+import { mechanicService, NoValidFieldsError } from "../services/mechanic.service";
 import {
   createMechanicSchema,
   mechanicIdParamSchema,
@@ -11,9 +11,6 @@ import {
 import { validatePayload } from "../validators/validator.utils";
 
 type IdParam = { id: string };
-
-const isNonEmptyString = (value: unknown): value is string =>
-  typeof value === "string" && value.trim().length > 0;
 
 export class MechanicController {
   getAll = async (_req: Request, res: Response) => {
@@ -64,21 +61,16 @@ export class MechanicController {
       res.status(400).json({ message: "Invalid payload.", errors });
       return;
     }
-    const data: Record<string, unknown> = {};
-    if (isNonEmptyString(value.name)) data.name = value.name.trim();
-    if (isNonEmptyString(value.email)) data.email = value.email.trim();
-    if (isNonEmptyString(value.password)) data.password = value.password.trim();
-    if (isNonEmptyString(value.address)) data.address = value.address.trim();
-    if (typeof value.zip_code === "number") data.zip_code = value.zip_code;
-    if (isNonEmptyString(value.city)) data.city = value.city.trim();
-    if (isNonEmptyString(value.siret)) data.siret = value.siret.trim();
-    if (isNonEmptyString(value.description)) data.description = value.description.trim();
-    if (Object.keys(data).length === 0) {
-      res.status(400).json({ message: "No valid fields provided for update." });
-      return;
+    try {
+      const mechanic = await mechanicService.update(params.id, value);
+      res.status(200).json(mechanic);
+    } catch (error) {
+      if (error instanceof NoValidFieldsError) {
+        res.status(400).json({ message: error.message });
+        return;
+      }
+      throw error;
     }
-    const mechanic = await mechanicService.update(params.id, data);
-    res.status(200).json(mechanic);
   };
 
   remove = async (req: Request<IdParam>, res: Response) => {

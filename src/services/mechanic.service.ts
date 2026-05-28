@@ -1,5 +1,10 @@
 import { MechanicRepository, mechanicRepository } from "../repositories/mechanic.repository";
 
+export class NoValidFieldsError extends Error {}
+
+const isNonEmptyString = (value: unknown): value is string =>
+  typeof value === "string" && value.trim().length > 0;
+
 type CreateMechanicInput = {
   name: string;
   email: string;
@@ -29,7 +34,21 @@ export class MechanicService {
   }
 
   update(id: number, data: UpdateMechanicInput) {
-    return this.mechanicRepository.update(id, data);
+    const patch: Record<string, unknown> = {};
+    if (isNonEmptyString(data.name)) patch.name = data.name!.trim();
+    if (isNonEmptyString(data.email)) patch.email = data.email!.trim();
+    if (isNonEmptyString(data.password)) patch.password = data.password!.trim();
+    if (isNonEmptyString(data.address)) patch.address = data.address!.trim();
+    if (typeof data.zip_code === "number") patch.zip_code = data.zip_code;
+    if (isNonEmptyString(data.city)) patch.city = data.city!.trim();
+    if (isNonEmptyString(data.siret)) patch.siret = data.siret!.trim();
+    if (isNonEmptyString(data.description)) patch.description = data.description!.trim();
+
+    if (Object.keys(patch).length === 0) {
+      throw new NoValidFieldsError("No valid fields provided for update.");
+    }
+
+    return this.mechanicRepository.update(id, patch);
   }
 
   delete(id: number) {
