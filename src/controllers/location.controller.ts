@@ -6,14 +6,13 @@ import {
 } from "../validators/location.validator";
 import { LocationServiceError, locationService } from "../services/location.service";
 
-export const locationController = {
-  async getAddressSuggestions(req: Request, res: Response) {
+export class LocationController {
+  getAddressSuggestions = async (req: Request, res: Response) => {
     const { errors, value } = validateAddressSuggestionQuery(req.query);
     if (errors || !value) {
       res.status(400).json({ message: "Invalid query params.", errors });
       return;
     }
-
     try {
       const suggestions = await locationService.getAddressSuggestions(value.query);
       res.status(200).json({ suggestions });
@@ -24,15 +23,14 @@ export const locationController = {
       }
       throw error;
     }
-  },
+  };
 
-  async getCitiesByPostalCode(req: Request, res: Response) {
+  getCitiesByPostalCode = async (req: Request, res: Response) => {
     const { errors, value } = validateCitiesByPostalCodeQuery(req.query);
     if (errors || !value) {
       res.status(400).json({ message: "Invalid query params.", errors });
       return;
     }
-
     try {
       const cities = await locationService.getCitiesByPostalCode(value.postalCode);
       res.status(200).json({ cities });
@@ -43,15 +41,14 @@ export const locationController = {
       }
       throw error;
     }
-  },
+  };
 
-  async getGarageBySiret(req: Request, res: Response) {
+  getGarageBySiret = async (req: Request, res: Response) => {
     const { errors, value } = validateSiretParam(req.params);
     if (errors || !value) {
       res.status(400).json({ message: "Invalid SIRET.", errors });
       return;
     }
-
     try {
       const result = await locationService.lookupGarageBySiret(value.siret);
       res.status(200).json({
@@ -70,5 +67,7 @@ export const locationController = {
       }
       throw error;
     }
-  },
-};
+  };
+}
+
+export const locationController = new LocationController();

@@ -112,7 +112,7 @@ async function fetchJson(url: string, init?: RequestInit) {
   return response.json();
 }
 
-export const locationService = {
+export class LocationService {
   async getAddressSuggestions(query: string) {
     const params = new URLSearchParams({ q: query, limit: "5" });
     const payload = (await fetchJson(
@@ -132,18 +132,13 @@ export const locationService = {
           return null;
         }
 
-        return {
-          label,
-          address,
-          zipCode,
-          city,
-        };
+        return { label, address, zipCode, city };
       })
       .filter(
         (entry): entry is { label: string; address: string; zipCode: string; city: string } =>
           entry !== null,
       );
-  },
+  }
 
   async getCitiesByPostalCode(postalCode: string) {
     const params = new URLSearchParams({
@@ -160,7 +155,7 @@ export const locationService = {
       .filter(Boolean);
 
     return [...new Set(cities)].sort((a, b) => a.localeCompare(b));
-  },
+  }
 
   async lookupGarageBySiret(siret: string): Promise<SiretLookupResult> {
     const inpiBaseUrl = getInpiBaseUrl();
@@ -198,5 +193,7 @@ export const locationService = {
     }
 
     return { ...extracted, source: "sirene" };
-  },
-};
+  }
+}
+
+export const locationService = new LocationService();
