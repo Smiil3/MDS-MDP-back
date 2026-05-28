@@ -26,7 +26,7 @@ export const getJwtRefreshExpiresIn = (): SignOptions["expiresIn"] => {
   return expiresIn ? (expiresIn as SignOptions["expiresIn"]) : "7d";
 };
 
-export const getDefaultSubscriptionId =(): Number => {
+export const getDefaultSubscriptionId =(): number => {
   const defaultSubscriptionId = Number(process.env.JWT_DEFAULT_SUBSCRIPTION);
   return defaultSubscriptionId || 1;
 }
