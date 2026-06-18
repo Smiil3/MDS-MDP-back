@@ -8,7 +8,7 @@ type CreateDriverData = {
   password: string;
   phone: string;
   birth_date: Date;
-  id_subscription: number;
+  id_subscription_type: number;
 };
 
 type CreateMechanicData = {

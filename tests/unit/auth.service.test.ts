@@ -110,25 +110,25 @@ describe("auth.service", () => {
     bcryptMock.hash.mockResolvedValue("hashed-password" as never);
     prismaMock.driver.create.mockResolvedValue({
       id_driver: 10,
-      email: "john@test.dev",
+      email: "john.snow@test.dev",
     });
     jwtMock.sign
       .mockReturnValueOnce("access-token" as never)
       .mockReturnValueOnce("refresh-token" as never);
 
     const result = await authService.registerDriver({
-      last_name: "Doe",
+      last_name: "Snow",
       first_name: "John",
-      email: "john@test.dev",
-      password: "password123",
-      phone: "0102030405",
+      email: "john.snow@test.dev",
+      password: "123456789",
+      phone: "0622559966",
       birth_date: "1990-01-01",
       id_subscription: 1,
     });
 
     expect(prismaMock.driver.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
-        email: "john@test.dev",
+        email: "john.snow@test.dev",
         password: "hashed-password",
       }),
     });

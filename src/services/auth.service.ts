@@ -43,7 +43,7 @@ export class AuthService {
       password: passwordHash,
       phone: input.phone,
       birth_date: new Date(input.birth_date),
-      id_subscription: defaultSubscriptionId,
+      id_subscription_type: defaultSubscriptionId,
     });
 
     return this._createAuthResponse({

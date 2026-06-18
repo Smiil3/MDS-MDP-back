@@ -47,21 +47,21 @@ model booking_status {
 }
 
 model driver {
-  id_driver       Int          @id @default(autoincrement())
-  last_name       String       @db.VarChar(100)
-  first_name      String       @db.VarChar(100)
-  email           String       @unique(map: "email") @db.VarChar(100)
-  password        String       @db.VarChar(100)
-  phone           String       @db.VarChar(50)
-  image_url       String?      @db.VarChar(255)
-  birth_date      DateTime     @db.Date
-  id_subscription Int?
-  booking         booking[]
-  subscription    subscription? @relation(fields: [id_subscription], references: [id_subscription], onDelete: NoAction, onUpdate: NoAction, map: "driver_ibfk_1")
-  review          review[]
-  vehicle         vehicle[]
+  id_driver            Int                @id @default(autoincrement())
+  last_name            String             @db.VarChar(100)
+  first_name           String             @db.VarChar(100)
+  email                String             @unique(map: "email") @db.VarChar(100)
+  password             String             @db.VarChar(100)
+  phone                String             @db.VarChar(50)
+  image_url            String?            @db.VarChar(255)
+  birth_date           DateTime           @db.Date
+  id_subscription_type Int?
+  booking              booking[]
+  subscription_type    subscription_type? @relation(fields: [id_subscription_type], references: [id_subscription_type], onDelete: NoAction, onUpdate: NoAction, map: "driver_ibfk_1")
+  review               review[]
+  vehicle              vehicle[]
 
-  @@index([id_subscription], map: "id_subscription")
+  @@index([id_subscription_type], map: "id_subscription_type")
 }
 
 model garage_service {
@@ -175,7 +175,6 @@ model subscription {
   start_date           DateTime          @db.Date
   end_date             DateTime          @db.Date
   id_subscription_type Int
-  driver               driver[]
   subscription_type    subscription_type @relation(fields: [id_subscription_type], references: [id_subscription_type], onDelete: NoAction, onUpdate: NoAction, map: "subscription_ibfk_1")
 
   @@index([id_subscription_type], map: "id_subscription_type")
@@ -185,6 +184,7 @@ model subscription_type {
   id_subscription_type Int            @id @default(autoincrement())
   label                String         @db.VarChar(50)
   price                Decimal        @db.Decimal(15, 2)
+  driver               driver[]
   subscription         subscription[]
 }
 

@@ -23,11 +23,11 @@ describe("user.validator", () => {
 
   it("rejects payload with unknown field", () => {
     const result = validatePayload(createUserSchema, {
-      last_name: "Doe",
+      last_name: "Snow",
       first_name: "John",
-      email: "john.doe@test.dev",
-      password: "password123",
-      phone: "0102030405",
+      email: "john.snow@test.dev",
+      password: "123456789",
+      phone: "0622559966",
       birth_date: "1990-01-01",
       id_subscription: 1,
       unknown: "forbidden",
