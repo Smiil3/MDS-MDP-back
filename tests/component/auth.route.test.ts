@@ -47,7 +47,7 @@ describe("auth routes (component)", () => {
       password: "password123",
       phone: "0102030405",
       birth_date: "1990-01-01",
-      id_subscription: 1,
+      id_subscription_type: 1,
     });
 
     expect(response.status).toBe(201);

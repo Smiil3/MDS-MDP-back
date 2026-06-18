@@ -3,6 +3,7 @@ import { app } from "../../src/app";
 import { mechanicService, NoValidFieldsError } from "../../src/services/mechanic.service";
 
 jest.mock("../../src/services/mechanic.service", () => ({
+  NoValidFieldsError: class NoValidFieldsError extends Error {},
   mechanicService: {
     findAll: jest.fn(),
     findById: jest.fn(),
