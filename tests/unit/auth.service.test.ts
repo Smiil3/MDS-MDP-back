@@ -93,11 +93,11 @@ describe("auth.service", () => {
     const result = await authService.registerDriver({
       last_name: "Doe",
       first_name: "John",
-      email: "john@test.dev",
+      email: "john.snow@test.dev",
       password: "password123",
       phone: "0102030405",
       birth_date: "1990-01-01",
-      id_subscription: 1,
+      id_subscription_type: 1,
     });
 
     expect(result).toBeNull();
@@ -123,7 +123,7 @@ describe("auth.service", () => {
       password: "123456789",
       phone: "0622559966",
       birth_date: "1990-01-01",
-      id_subscription: 1,
+      id_subscription_type: 1,
     });
 
     expect(prismaMock.driver.create).toHaveBeenCalledWith({
@@ -135,20 +135,20 @@ describe("auth.service", () => {
     expect(result).toEqual({
       accessToken: "access-token",
       refreshToken: "refresh-token",
-      user: { id: 10, role: AuthRole.DRIVER, email: "john@test.dev" },
+      user: { id: 10, role: AuthRole.DRIVER, email: "john.snow@test.dev" },
     });
   });
 
   it("loginDriver returns null when password is invalid", async () => {
     prismaMock.driver.findUnique.mockResolvedValue({
       id_driver: 12,
-      email: "john@test.dev",
+      email: "john.snow@test.dev",
       password: "hashed-password",
     });
     bcryptMock.compare.mockResolvedValue(false as never);
 
     const result = await authService.loginDriver({
-      email: "john@test.dev",
+      email: "john.snow@test.dev",
       password: "bad-password",
     });
 

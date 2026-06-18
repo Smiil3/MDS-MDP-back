@@ -1,6 +1,6 @@
 import request from "supertest";
 import { app } from "../../src/app";
-import { mechanicService } from "../../src/services/mechanic.service";
+import { mechanicService, NoValidFieldsError } from "../../src/services/mechanic.service";
 
 jest.mock("../../src/services/mechanic.service", () => ({
   mechanicService: {
@@ -94,6 +94,9 @@ describe("mechanic routes (component)", () => {
 
   it("PUT /api/mechanics/:id returns 400 when no valid field is provided", async () => {
     mechanicServiceMock.findById.mockResolvedValue({ id_mechanic: 1 } as never);
+    mechanicServiceMock.update.mockImplementation(() => {
+      throw new NoValidFieldsError("No valid fields provided for update.");
+    });
 
     const response = await request(app).put("/api/mechanics/1").send({
       description: "",

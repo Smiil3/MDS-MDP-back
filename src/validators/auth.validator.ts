@@ -8,7 +8,7 @@ export type DriverRegisterInput = {
   password: string;
   phone: string;
   birth_date: string;
-  id_subscription?: number;
+  id_subscription_type?: number;
 };
 
 export type DriverLoginInput = {
@@ -98,7 +98,7 @@ export const driverRegisterSchema = Joi.object({
   password: Joi.string().required(),
   phone: Joi.string().required(),
   birth_date: Joi.date().iso().required(),
-  id_subscription: Joi.number().integer().positive().optional(),
+  id_subscription_type: Joi.number().integer().positive().optional(),
 }).required();
 
 export const driverLoginSchema = Joi.object({
