@@ -36,6 +36,8 @@ describe("garage routes (component)", () => {
         openingHours: { mon: { open: "08:00", close: "18:00" } },
         description: "Réparation auto rapide",
         distanceMeters: 320,
+        averageRating: null,
+        services: [],
       },
     ]);
 
@@ -63,6 +65,8 @@ describe("garage routes (component)", () => {
           openingHours: { mon: { open: "08:00", close: "18:00" } },
           description: "Réparation auto rapide",
           distanceMeters: 320,
+          averageRating: null,
+          services: [],
         },
       ],
     });
@@ -95,11 +99,14 @@ describe("garage routes (component)", () => {
       imageUrl: "https://cdn.test/garage.jpg",
       openingHours: { mon: [{ open: "08:00", close: "18:00" }] },
       description: "Réparation auto rapide",
+      averageRating: null,
+      phone: null,
+      email: "garage@test.dev",
       services: [
         {
           vidange: [
-            { serviceName: "Filtres", price: 12 },
-            { serviceName: "Filtres + huile", price: 24 },
+            { id: 1, serviceName: "Filtres", price: 12 },
+            { id: 2, serviceName: "Filtres + huile", price: 24 },
           ],
         },
       ],
@@ -120,11 +127,14 @@ describe("garage routes (component)", () => {
         imageUrl: "https://cdn.test/garage.jpg",
         openingHours: { mon: [{ open: "08:00", close: "18:00" }] },
         description: "Réparation auto rapide",
+        averageRating: null,
+        phone: null,
+        email: "garage@test.dev",
         services: [
           {
             vidange: [
-              { serviceName: "Filtres", price: 12 },
-              { serviceName: "Filtres + huile", price: 24 },
+              { id: 1, serviceName: "Filtres", price: 12 },
+              { id: 2, serviceName: "Filtres + huile", price: 24 },
             ],
           },
         ],
